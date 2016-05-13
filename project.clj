@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [clj-http "2.0.0"]
                  [http-kit "2.1.18"]
-                 ;; [cheshire "5.5.0"]
+                 [cheshire "5.6.1"]
                  [org.clojure/java.jmx "0.3.1"]
                  [org.clojure/core.async "0.2.374"]
                  [ring/ring-core "1.4.0"]
