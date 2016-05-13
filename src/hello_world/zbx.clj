@@ -14,7 +14,7 @@
     (io/copy reader response)
     (-> response
         str
-        (json/parse-string true))))
+        (json/parse-string))))
 
 (defn send-request
   "Sends an TCP request to the specified host and port"
