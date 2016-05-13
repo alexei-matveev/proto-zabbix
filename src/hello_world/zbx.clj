@@ -4,8 +4,8 @@
   (:import [java.io StringWriter]
            [java.net Socket]))
 
-(defn- read-char-array [reader n]
-  (let [buf (char-array n)]
+(defn- read-byte-array [reader n]
+  (let [buf (byte-array n)]
     (.read reader buf)
     buf))
 
@@ -20,13 +20,13 @@
   "Sends an TCP request to the specified host and port"
   [host port text]
   (with-open [sock (Socket. host port)
-              writer (io/writer sock)
-              reader (io/reader sock)]
-    (.append writer text)
+              writer (io/output-stream sock)
+              reader (io/input-stream sock)]
+    (.write writer (.getBytes text))
     (.flush writer)
     ;; Response is "ZBXD\1" <8 byte length> <json body>
-    (let [header (read-char-array reader 5)
-          length (read-char-array reader 8)
+    (let [header (read-byte-array reader 5)
+          length (read-byte-array reader 8)
           json (read-json reader)]
       (vector header length json))))
 
