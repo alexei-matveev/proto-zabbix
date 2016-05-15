@@ -6,8 +6,9 @@
            [java.net Socket]))
 
 (defn- read-byte-array [reader n]
-  (let [buf (byte-array n)]
-    (.read reader buf)
+  (let [buf (byte-array n)
+        m (.read reader buf)]
+    (assert (= m n))
     buf))
 
 ;; Zabbix headers provides the size field in little endian. Java data
