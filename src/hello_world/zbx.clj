@@ -3,7 +3,7 @@
             [cheshire.core :as json])
   (:import [java.io StringWriter]
            [java.nio ByteBuffer ByteOrder]
-           [java.net Socket]))
+           [java.net Socket ServerSocket]))
 
 (defn- read-byte-array [reader n]
   (let [buf (byte-array n)
@@ -80,3 +80,27 @@
 ;; (zabbix-get "localhost" 10050 "agent.version")
 
 
+(defn- zreceive
+  [socket]
+  ;; Dont close the socket here if you are going to send
+  ;; replies. Using with-open instead of let would do that:
+  (let [reader (io/input-stream socket)]
+    (read-zbxd reader)))
+
+(defn- zsend
+  "Send the given string message out over the given socket"
+  [socket msg]
+  (let [writer (io/writer socket)]
+      (.write writer msg)
+      (.flush writer)))
+
+
+(defn- zserve [port handler]
+  (with-open [server-sock (ServerSocket. port)
+              sock (.accept server-sock)]
+    (let [msg-in (zreceive sock)
+          msg-out (handler msg-in)]
+      (zsend sock msg-out)
+      msg-in)))
+
+;; (zserve 10051 (fn [x] ""))
