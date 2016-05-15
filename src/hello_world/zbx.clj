@@ -20,12 +20,16 @@
         (.order ByteOrder/LITTLE_ENDIAN)
         (.getLong))))
 
+;; FIXME: returns original text on parse errors:
 (defn- read-json [reader]
   (with-open [response (StringWriter.)]
     (io/copy reader response)
     (let [text (str response)]
       ;; (prn (count text))
-      (json/parse-string text))))
+      (try
+        (json/parse-string text)
+        ;; FIXME: JsonParseException maybe?
+        (catch Exception e text)))))
 
 (defn send-request
   "Sends an TCP request to the specified host and port"
@@ -36,14 +40,17 @@
     (.write writer (.getBytes text))
     (.flush writer)
     ;; Response is "ZBXD\1" <8 byte length> <json body>
-    (let [magic (read-byte-array reader 4)
+    (let [magic (String. (read-byte-array reader 4))
           ;; Single byte version number, always 1:
           version (.read reader)
           ;; You could wrap the reader into a DataInputStream but Java
           ;; would assume big endian with (.readLong reader)
           length (read-long reader)
+          ;; For unsupported keys the body is "ZBX_NOTSUPPORTED" which
+          ;; is not a valid json. FIXME: we return original text on
+          ;; parse errors so far:
           json (read-json reader)]
-      (vector magic version length json))))
+      {:magic magic, :version version, :length length, :json json})))
 
 
 ;; (send-request "localhost" 10050 "vfs.fs.discovery")
