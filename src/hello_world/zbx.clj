@@ -2,12 +2,22 @@
   (:require [clojure.java.io :as io]
             [cheshire.core :as json])
   (:import [java.io StringWriter]
+           [java.nio ByteBuffer ByteOrder]
            [java.net Socket]))
 
 (defn- read-byte-array [reader n]
   (let [buf (byte-array n)]
     (.read reader buf)
     buf))
+
+;; Zabbix headers provides the size field in little endian. Java data
+;; streams use big endian unconditionally.  ByteBuffer offers a
+;; workaround:
+(defn- read-long [reader]
+  (let [buf (read-byte-array reader 8)]
+    (-> (ByteBuffer/wrap buf)
+        (.order ByteOrder/LITTLE_ENDIAN)
+        (.getLong))))
 
 (defn- read-json [reader]
   (with-open [response (StringWriter.)]
@@ -26,7 +36,11 @@
     (.flush writer)
     ;; Response is "ZBXD\1" <8 byte length> <json body>
     (let [header (read-byte-array reader 5)
-          length (read-byte-array reader 8)
+          ;; You could wrap the reader into a DataInputStream but Java
+          ;; would assume big endian here:
+          ;; length (.readLong reader)
+          ;; length (read-byte-array reader 8)
+          length (read-long reader)
           json (read-json reader)]
       (vector header length json))))
 
