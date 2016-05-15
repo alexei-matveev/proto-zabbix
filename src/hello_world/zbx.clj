@@ -23,9 +23,9 @@
 (defn- read-json [reader]
   (with-open [response (StringWriter.)]
     (io/copy reader response)
-    (-> response
-        str
-        (json/parse-string))))
+    (let [text (str response)]
+      ;; (prn (count text))
+      (json/parse-string text))))
 
 (defn send-request
   "Sends an TCP request to the specified host and port"
