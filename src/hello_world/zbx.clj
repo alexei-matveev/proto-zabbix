@@ -96,8 +96,7 @@
 ;; vfs.fs.size[/,used]
 ;;
 ;; See e.g.:
-;; https://www.zabbix.com/documentation/2.4\
-;; /manual/appendix/items/supported_by_platform
+;; https://www.zabbix.com/documentation/2.4/manual/appendix/items/supported_by_platform
 ;;
 (defn zabbix-get
   "Sends an TCP request to the specified host and port"
@@ -145,12 +144,12 @@
   (let [request (get json "request")]
     (if (= "active checks" request)
       ;; FIXME: lastlogsize and mtime required for log items and may
-      ;; be omitted except for the older agents:
+      ;; be omitted except for the older agents including 2.2.2:
       {"response" "success",
-       "data" [{"key" "agent.version",
-                "delay" 30,
-                "lastlogsize" 0
-                "mtime" 0}]}
+       "data" [{"key" "agent.version", "delay" 30,
+                "lastlogsize" 0, "mtime" 0}
+               {"key" "system.uptime", "delay" 30,
+                "lastlogsize" 0, "mtime" 0}]}
       "")))
 
 ;; (def server (zserver 10051 zhandler))
