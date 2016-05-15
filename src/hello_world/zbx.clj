@@ -4,9 +4,9 @@
   (:import [java.nio ByteBuffer ByteOrder]
            [java.net Socket ServerSocket]))
 
-(defn- read-byte-array [reader n]
+(defn- read-byte-array [stream n]
   (let [buf (byte-array n)
-        m (.read reader buf)]
+        m (.read stream buf)]
     (assert (= m n))
     buf))
 
@@ -27,13 +27,13 @@
 
 ;; (buf->long (long->buf 1234567890)) => 1234567890
 
-(defn- read-long [reader]
-  (let [buf (read-byte-array reader 8)]
+(defn- read-long [stream]
+  (let [buf (read-byte-array stream 8)]
     (buf->long buf)))
 
-(defn- write-long [writer n]
+(defn- write-long [stream n]
   (let [buf (long->buf n)]
-    (.write writer buf)))
+    (.write stream buf)))
 
 ;;
 ;; Note that while reading the JSON you cannot wait on EOF. Instead
@@ -47,8 +47,8 @@
 ;; https://www.zabbix.com/documentation/2.4\
 ;; /manual/appendix/items/activepassive
 ;;
-(defn- read-json [reader length]
-  (let [buf (read-byte-array reader length)
+(defn- read-json [stream length]
+  (let [buf (read-byte-array stream length)
         text (String. buf)]
     (try
         (json/parse-string text)
