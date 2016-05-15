@@ -21,6 +21,11 @@
         (.getLong))))
 
 ;; FIXME: returns original text on parse errors:
+;;
+;; See e.g.:
+;;
+;; https://www.zabbix.com/documentation/2.4/manual/appendix/items/activepassive
+;;
 (defn- read-json [reader]
   (with-open [response (StringWriter.)]
     (io/copy reader response)
@@ -38,7 +43,7 @@
 ;; vfs.fs.discovery
 ;; vfs.fs.size[/,used]
 ;;
-(defn send-request
+(defn zabbix-get
   "Sends an TCP request to the specified host and port"
   [host port text]
   (with-open [sock (Socket. host port)
@@ -61,8 +66,8 @@
       {:magic magic, :version version, :length length, :json json})))
 
 
-;; (send-request "localhost" 10050 "vfs.fs.discovery")
-;; (send-request "localhost" 10050 "vfs.fs.size[/,used]")
-;; (send-request "localhost" 10050 "agent.version")
+;; (zabbix-get "localhost" 10050 "vfs.fs.discovery")
+;; (zabbix-get "localhost" 10050 "vfs.fs.size[/,used]")
+;; (zabbix-get "localhost" 10050 "agent.version")
 
 
