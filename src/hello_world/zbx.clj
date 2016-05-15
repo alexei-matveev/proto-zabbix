@@ -94,13 +94,21 @@
       (.write writer msg)
       (.flush writer)))
 
+;; If you dont reply to the initial request of an active agent by e.g.
+;; sending an empty string the agent will retry in 60 seconds.
+(defn zserver [port handler]
+  (let [running (atom true)]
+    (future
+      (with-open [server-sock (ServerSocket. port)]
+        ;; FIXME: it will need to get one more request after resetting
+        ;; the atom to actually exit the loop:
+        (while @running
+          (with-open [sock (.accept server-sock)]
+            (let [msg-in (zreceive sock)
+                  msg-out (handler msg-in)]
+              (clojure.pprint/pprint msg-in)
+              (zsend sock msg-out))))))
+    running))
 
-(defn- zserve [port handler]
-  (with-open [server-sock (ServerSocket. port)
-              sock (.accept server-sock)]
-    (let [msg-in (zreceive sock)
-          msg-out (handler msg-in)]
-      (zsend sock msg-out)
-      msg-in)))
-
-;; (zserve 10051 (fn [x] ""))
+;; (def server (zserver 10051 (fn [x] "")))
+;; (reset! server false)
