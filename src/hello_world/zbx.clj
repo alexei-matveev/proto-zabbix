@@ -56,8 +56,11 @@
         (catch Exception e text))))
 
 
+;;
+;; Protocoll is "ZBXD\1" <8 byte length> <json body>. This protocoll
+;; is used both by agent and server when putting data on the wire.
+;;
 (defn- read-zbxd [stream]
-  ;; Response is "ZBXD\1" <8 byte length> <json body>
   (let [magic (String. (read-byte-array stream 4))
         ;; Single byte version number, always 1:
         version (.read stream)
@@ -69,12 +72,13 @@
         ;; original text on ANY parse error so far. This makes parse
         ;; errors indistinguishable from quoted strings:
         json (read-json stream length)]
-    {:magic magic, :version version, :length length, :json json}))
+    (assert (= "ZBXD" magic))
+    (assert (= 1 version))
+    json))
 
 (defn- write-zbxd [stream json]
   (let [text (json/generate-string json)
         buf (.getBytes text)]
-    (prn text)
     (.write stream (.getBytes "ZBXD\1"))
     (write-long stream (count buf))
     (.write stream buf)
@@ -132,14 +136,16 @@
           (with-open [sock (.accept server-sock)]
             (let [msg-in (zreceive sock)
                   msg-out (handler msg-in)]
-              (clojure.pprint/pprint msg-in)
+              (clojure.pprint/pprint
+               {:INP msg-in :OUT msg-out})
               (zsend sock msg-out))))))
     running))
 
-(defn- zhandler [request]
-  (let [word (-> request :json (get "request"))]
-    (if (= "active checks" word)
-      ;; FIXME: lastlogsize and mtime for older agents are omitted:
+(defn- zhandler [json]
+  (let [request (get json "request")]
+    (if (= "active checks" request)
+      ;; FIXME: lastlogsize and mtime required for log items and may
+      ;; be omitted except for the older agents:
       {"response" "success",
        "data" [{"key" "agent.version",
                 "delay" 30,
