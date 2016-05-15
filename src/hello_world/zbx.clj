@@ -31,6 +31,13 @@
         ;; FIXME: JsonParseException maybe?
         (catch Exception e text)))))
 
+;;
+;; Examples of valid key values as text:
+;;
+;; agent.version
+;; vfs.fs.discovery
+;; vfs.fs.size[/,used]
+;;
 (defn send-request
   "Sends an TCP request to the specified host and port"
   [host port text]
@@ -44,14 +51,18 @@
           ;; Single byte version number, always 1:
           version (.read reader)
           ;; You could wrap the reader into a DataInputStream but Java
-          ;; would assume big endian with (.readLong reader)
+          ;; would assume big endian with (.readLong reader). Instead:
           length (read-long reader)
           ;; For unsupported keys the body is "ZBX_NOTSUPPORTED" which
           ;; is not a valid json. FIXME: we return original text on
-          ;; parse errors so far:
+          ;; ANY parse error so far. This makes parse errors
+          ;; indistinguishable from quoted strings:
           json (read-json reader)]
       {:magic magic, :version version, :length length, :json json})))
 
 
 ;; (send-request "localhost" 10050 "vfs.fs.discovery")
+;; (send-request "localhost" 10050 "vfs.fs.size[/,used]")
+;; (send-request "localhost" 10050 "agent.version")
+
 
