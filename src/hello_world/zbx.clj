@@ -24,7 +24,8 @@
 ;;
 ;; See e.g.:
 ;;
-;; https://www.zabbix.com/documentation/2.4/manual/appendix/items/activepassive
+;; https://www.zabbix.com/documentation/2.4\
+;; /manual/appendix/items/activepassive
 ;;
 (defn- read-json [reader]
   (with-open [response (StringWriter.)]
@@ -36,12 +37,31 @@
         ;; FIXME: JsonParseException maybe?
         (catch Exception e text)))))
 
+(defn- read-zbxd [reader]
+  ;; Response is "ZBXD\1" <8 byte length> <json body>
+  (let [magic (String. (read-byte-array reader 4))
+        ;; Single byte version number, always 1:
+        version (.read reader)
+        ;; You could wrap the reader into a DataInputStream but Java
+        ;; would assume big endian with (.readLong reader). Instead:
+        length (read-long reader)
+        ;; For unsupported keys the body is "ZBX_NOTSUPPORTED" which
+        ;; is not a valid json. FIXME: we return original text on
+        ;; ANY parse error so far. This makes parse errors
+        ;; indistinguishable from quoted strings:
+        json (read-json reader)]
+    {:magic magic, :version version, :length length, :json json}))
+
 ;;
 ;; Examples of valid key values as text:
 ;;
 ;; agent.version
 ;; vfs.fs.discovery
 ;; vfs.fs.size[/,used]
+;;
+;; See e.g.:
+;; https://www.zabbix.com/documentation/2.4\
+;; /manual/appendix/items/supported_by_platform
 ;;
 (defn zabbix-get
   "Sends an TCP request to the specified host and port"
@@ -52,18 +72,7 @@
     (.write writer (.getBytes text))
     (.flush writer)
     ;; Response is "ZBXD\1" <8 byte length> <json body>
-    (let [magic (String. (read-byte-array reader 4))
-          ;; Single byte version number, always 1:
-          version (.read reader)
-          ;; You could wrap the reader into a DataInputStream but Java
-          ;; would assume big endian with (.readLong reader). Instead:
-          length (read-long reader)
-          ;; For unsupported keys the body is "ZBX_NOTSUPPORTED" which
-          ;; is not a valid json. FIXME: we return original text on
-          ;; ANY parse error so far. This makes parse errors
-          ;; indistinguishable from quoted strings:
-          json (read-json reader)]
-      {:magic magic, :version version, :length length, :json json})))
+    (read-zbxd reader)))
 
 
 ;; (zabbix-get "localhost" 10050 "vfs.fs.discovery")
