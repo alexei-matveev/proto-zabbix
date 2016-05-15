@@ -1,8 +1,7 @@
 (ns hello-world.zbx
   (:require [clojure.java.io :as io]
             [cheshire.core :as json])
-  (:import [java.io StringWriter]
-           [java.nio ByteBuffer ByteOrder]
+  (:import [java.nio ByteBuffer ByteOrder]
            [java.net Socket ServerSocket]))
 
 (defn- read-byte-array [reader n]
@@ -14,43 +13,76 @@
 ;; Zabbix headers provides the size field in little endian. Java data
 ;; streams use big endian unconditionally.  ByteBuffer offers a
 ;; workaround:
-(defn- read-long [reader]
-  (let [buf (read-byte-array reader 8)]
+(defn- buf->long [buf]
+  (-> (ByteBuffer/wrap buf)
+      (.order ByteOrder/LITTLE_ENDIAN)
+      (.getLong)))
+
+(defn- long->buf [n]
+  (let [buf (byte-array 8)]
     (-> (ByteBuffer/wrap buf)
         (.order ByteOrder/LITTLE_ENDIAN)
-        (.getLong))))
+        (.putLong n)
+        (.array))))
 
-;; FIXME: returns original text on parse errors:
+;; (buf->long (long->buf 1234567890)) => 1234567890
+
+(defn- read-long [reader]
+  (let [buf (read-byte-array reader 8)]
+    (buf->long buf)))
+
+(defn- write-long [writer n]
+  (let [buf (long->buf n)]
+    (.write writer buf)))
+
+;;
+;; Note that while reading the JSON you cannot wait on EOF. Instead
+;; read the fixed length and parse it already. Reading until the end
+;; of stream is waiting for the timeout (a few seconds).
+;;
+;; FIXME: returns original text on parse errors!
 ;;
 ;; See e.g.:
 ;;
 ;; https://www.zabbix.com/documentation/2.4\
 ;; /manual/appendix/items/activepassive
 ;;
-(defn- read-json [reader]
-  (with-open [response (StringWriter.)]
-    (io/copy reader response)
-    (let [text (str response)]
-      ;; (prn (count text))
-      (try
+(defn- read-json [reader length]
+  (let [buf (read-byte-array reader length)
+        text (String. buf)]
+    (try
         (json/parse-string text)
         ;; FIXME: JsonParseException maybe?
-        (catch Exception e text)))))
+        (catch Exception e text))))
 
-(defn- read-zbxd [reader]
+
+(defn- read-zbxd [stream]
   ;; Response is "ZBXD\1" <8 byte length> <json body>
-  (let [magic (String. (read-byte-array reader 4))
+  (let [magic (String. (read-byte-array stream 4))
         ;; Single byte version number, always 1:
-        version (.read reader)
-        ;; You could wrap the reader into a DataInputStream but Java
-        ;; would assume big endian with (.readLong reader). Instead:
-        length (read-long reader)
-        ;; For unsupported keys the body is "ZBX_NOTSUPPORTED" which
-        ;; is not a valid json. FIXME: we return original text on
-        ;; ANY parse error so far. This makes parse errors
-        ;; indistinguishable from quoted strings:
-        json (read-json reader)]
+        version (.read stream)
+        ;; You could wrap the stream into a DataInputStream but Java
+        ;; would assume big endian with (.readLong stream). Instead:
+        length (read-long stream)
+        ;; For unsupported keys the body is ZBX_NOTSUPPORTED, without
+        ;; quotes, which is not a valid json. FIXME: we return
+        ;; original text on ANY parse error so far. This makes parse
+        ;; errors indistinguishable from quoted strings:
+        json (read-json stream length)]
     {:magic magic, :version version, :length length, :json json}))
+
+(defn- write-zbxd [stream json]
+  (let [text (json/generate-string json)
+        buf (.getBytes text)]
+    (prn text)
+    (.write stream (.getBytes "ZBXD\1"))
+    (write-long stream (count buf))
+    (.write stream buf)
+    (.flush stream)))
+
+;; (def a1 {"request" "active checks", "host" "Zabbix server"})
+;; (write-zbxd (io/output-stream "a1") a1)
+;; (read-zbxd (io/input-stream "a1"))
 
 ;;
 ;; Examples of valid key values as text:
@@ -74,25 +106,19 @@
     ;; Response is "ZBXD\1" <8 byte length> <json body>
     (read-zbxd reader)))
 
-
-;; (zabbix-get "localhost" 10050 "vfs.fs.discovery")
-;; (zabbix-get "localhost" 10050 "vfs.fs.size[/,used]")
 ;; (zabbix-get "localhost" 10050 "agent.version")
+;; (zabbix-get "localhost" 10050 "vfs.fs.size[/,used]")
+;; (zabbix-get "localhost" 10050 "vfs.fs.discovery")
 
-
-(defn- zreceive
-  [socket]
+(defn- zreceive [socket]
   ;; Dont close the socket here if you are going to send
   ;; replies. Using with-open instead of let would do that:
-  (let [reader (io/input-stream socket)]
-    (read-zbxd reader)))
+  (let [stream (io/input-stream socket)]
+    (read-zbxd stream)))
 
-(defn- zsend
-  "Send the given string message out over the given socket"
-  [socket msg]
-  (let [writer (io/writer socket)]
-      (.write writer msg)
-      (.flush writer)))
+(defn- zsend [socket json]
+  (let [stream (io/output-stream socket)]
+    (write-zbxd stream json)))
 
 ;; If you dont reply to the initial request of an active agent by e.g.
 ;; sending an empty string the agent will retry in 60 seconds.
@@ -110,5 +136,16 @@
               (zsend sock msg-out))))))
     running))
 
-;; (def server (zserver 10051 (fn [x] "")))
+(defn- zhandler [request]
+  (let [word (-> request :json (get "request"))]
+    (if (= "active checks" word)
+      ;; FIXME: lastlogsize and mtime for older agents are omitted:
+      {"response" "success",
+       "data" [{"key" "agent.version",
+                "delay" 30,
+                "lastlogsize" 0
+                "mtime" 0}]}
+      "")))
+
+;; (def server (zserver 10051 zhandler))
 ;; (reset! server false)
