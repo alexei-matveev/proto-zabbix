@@ -36,14 +36,14 @@
     (.write writer (.getBytes text))
     (.flush writer)
     ;; Response is "ZBXD\1" <8 byte length> <json body>
-    (let [header (read-byte-array reader 5)
+    (let [magic (read-byte-array reader 4)
+          ;; Single byte version number, always 1:
+          version (.read reader)
           ;; You could wrap the reader into a DataInputStream but Java
-          ;; would assume big endian here:
-          ;; length (.readLong reader)
-          ;; length (read-byte-array reader 8)
+          ;; would assume big endian with (.readLong reader)
           length (read-long reader)
           json (read-json reader)]
-      (vector header length json))))
+      (vector magic version length json))))
 
 
 ;; (send-request "localhost" 10050 "vfs.fs.discovery")
