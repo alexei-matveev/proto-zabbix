@@ -154,3 +154,7 @@
 
 ;; (def server (zserver 10051 zhandler))
 ;; (reset! server false)
+
+;; Terminate with C-c:
+(defn -main [& args]
+  (zserver 10051 zhandler))
