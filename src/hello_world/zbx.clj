@@ -1,6 +1,7 @@
 (ns hello-world.zbx
   (:require [clojure.java.io :as io]
-            [cheshire.core :as json])
+            [cheshire.core :as json]
+            [clojure.pprint :refer [pprint]])
   (:import [java.nio ByteBuffer ByteOrder]
            [java.net Socket ServerSocket]))
 
@@ -135,8 +136,7 @@
           (with-open [sock (.accept server-sock)]
             (let [msg-in (zreceive sock)
                   msg-out (handler msg-in)]
-              (clojure.pprint/pprint
-               {:INP msg-in :OUT msg-out})
+              (pprint {:INP msg-in :OUT msg-out})
               (zsend sock msg-out))))))
     running))
 
