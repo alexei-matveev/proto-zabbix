@@ -76,19 +76,20 @@
     (assert (= 1 version))
     json))
 
+;; Each small write to a stream is a TCP round trip. When looking
+;; at tcpdump the vanilla Zabbix agents sends magic+version, size and
+;; the body in three different rounds, the vanilla server is slightly
+;; less chatty. We write everything in one step ...
 (defn- write-zbxd [stream json]
   (let [text (json/generate-string json)
         body (.getBytes text)
+        length (count body)
         magic+version (.getBytes "ZBXD\1")]
-    ;; Each write to a stream is a TCP round trip. Looking tcpdump the
-    ;; vanilla Zabbix uses less TCP round trips, but is not quite
-    ;; consistently. Write the header in one step ...
     (doto (ByteArrayOutputStream.)
       (.write magic+version)
-      (write-long (count body))
+      (write-long length)
+      (.write body)
       (.writeTo stream))
-    ;; ... and the body on another:
-    (.write stream body)
     (.flush stream)))
 
 ;; (def a1 {"request" "active checks", "host" "Zabbix server"})
