@@ -19,7 +19,7 @@
       (.getLong)))
 
 (defn- long->buf [n]
-  (let [buf (byte-array 8)]
+  (let [buf (byte-array Long/BYTES)]
     (-> (ByteBuffer/wrap buf)
         (.order ByteOrder/LITTLE_ENDIAN)
         (.putLong n)
@@ -28,7 +28,7 @@
 ;; (buf->long (long->buf 1234567890)) => 1234567890
 
 (defn- read-long [stream]
-  (let [buf (read-byte-array stream 8)]
+  (let [buf (read-byte-array stream Long/BYTES)]
     (buf->long buf)))
 
 (defn- write-long [stream n]
