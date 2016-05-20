@@ -4,15 +4,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
-                 [clj-http "2.0.0"]
-                 [http-kit "2.1.18"]
-                 [cheshire "5.6.1"]
-                 [org.clojure/java.jmx "0.3.1"]
-                 [org.clojure/core.async "0.2.374"]
-                 [ring/ring-core "1.4.0"]
-                 [ring/ring-jetty-adapter "1.4.0"]
-                 [clojure-csv/clojure-csv "2.0.1"]
-                 [instaparse "1.4.1"]]
-  :main ^:skip-aot hello-world.core
+                 [cheshire "5.6.1"]]
+  :main ^:skip-aot hello-world.zbx
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})
