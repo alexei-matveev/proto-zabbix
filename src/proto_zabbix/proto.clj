@@ -2,6 +2,7 @@
   (:require [clojure.java.io :as io]
             [cheshire.core :as json])
   (:import [java.nio ByteBuffer ByteOrder]
+           [java.io ByteArrayOutputStream]
            [java.net Socket]))
 
 (defn- read-byte-array [stream n]
@@ -77,10 +78,17 @@
 
 (defn- write-zbxd [stream json]
   (let [text (json/generate-string json)
-        buf (.getBytes text)]
-    (.write stream (.getBytes "ZBXD\1"))
-    (write-long stream (count buf))
-    (.write stream buf)
+        body (.getBytes text)
+        magic+version (.getBytes "ZBXD\1")]
+    ;; Each write to a stream is a TCP round trip. Looking tcpdump the
+    ;; vanilla Zabbix uses less TCP round trips, but is not quite
+    ;; consistently. Write the header in one step ...
+    (doto (ByteArrayOutputStream.)
+      (.write magic+version)
+      (write-long (count body))
+      (.writeTo stream))
+    ;; ... and the body on another:
+    (.write stream body)
     (.flush stream)))
 
 ;; (def a1 {"request" "active checks", "host" "Zabbix server"})
