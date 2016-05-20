@@ -5,6 +5,6 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [cheshire "5.6.1"]]
-  :main ^:skip-aot proto-zabbix.zbx
+  :main ^:skip-aot proto-zabbix.zabbix
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})

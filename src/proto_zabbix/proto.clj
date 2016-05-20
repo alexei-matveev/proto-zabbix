@@ -1,9 +1,8 @@
-(ns proto-zabbix.zbx
+(ns proto-zabbix.proto
   (:require [clojure.java.io :as io]
-            [cheshire.core :as json]
-            [clojure.pprint :refer [pprint]])
+            [cheshire.core :as json])
   (:import [java.nio ByteBuffer ByteOrder]
-           [java.net Socket ServerSocket]))
+           [java.net Socket]))
 
 (defn- read-byte-array [stream n]
   (let [buf (byte-array n)
@@ -45,8 +44,7 @@
 ;;
 ;; See e.g.:
 ;;
-;; https://www.zabbix.com/documentation/2.4\
-;; /manual/appendix/items/activepassive
+;; https://www.zabbix.com/documentation/2.4/manual/appendix/items/activepassive
 ;;
 (defn- read-json [stream length]
   (let [buf (read-byte-array stream length)
@@ -114,47 +112,12 @@
 ;; (zabbix-get "localhost" 10050 "vfs.fs.size[/,used]")
 ;; (zabbix-get "localhost" 10050 "vfs.fs.discovery")
 
-(defn- zreceive [socket]
+(defn proto-recv [socket]
   ;; Dont close the socket here if you are going to send
   ;; replies. Using with-open instead of let would do that:
   (let [stream (io/input-stream socket)]
     (read-zbxd stream)))
 
-(defn- zsend [socket json]
+(defn proto-send [socket json]
   (let [stream (io/output-stream socket)]
     (write-zbxd stream json)))
-
-;; If you dont reply to the initial request of an active agent by e.g.
-;; sending an empty string the agent will retry in 60 seconds.
-(defn zserver [port handler]
-  (let [running (atom true)]
-    (future
-      (with-open [server-sock (ServerSocket. port)]
-        ;; FIXME: it will need to get one more request after resetting
-        ;; the atom to actually exit the loop:
-        (while @running
-          (with-open [sock (.accept server-sock)]
-            (let [msg-in (zreceive sock)
-                  msg-out (handler msg-in)]
-              (pprint {:INP msg-in :OUT msg-out})
-              (zsend sock msg-out))))))
-    running))
-
-(defn- zhandler [json]
-  (let [request (get json "request")]
-    (if (= "active checks" request)
-      ;; FIXME: lastlogsize and mtime required for log items and may
-      ;; be omitted except for the older agents including 2.2.2:
-      {"response" "success",
-       "data" [{"key" "agent.version", "delay" 30,
-                "lastlogsize" 0, "mtime" 0}
-               {"key" "system.uptime", "delay" 30,
-                "lastlogsize" 0, "mtime" 0}]}
-      "")))
-
-;; (def server (zserver 10051 zhandler))
-;; (reset! server false)
-
-;; Terminate with C-c:
-(defn -main [& args]
-  (zserver 10051 zhandler))
