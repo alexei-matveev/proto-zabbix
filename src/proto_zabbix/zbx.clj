@@ -1,4 +1,4 @@
-(ns hello-world.zbx
+(ns proto-zabbix.zbx
   (:require [clojure.java.io :as io]
             [cheshire.core :as json]
             [clojure.pprint :refer [pprint]])
