@@ -47,11 +47,18 @@
 
 (defn- zhandler [json]
   (let [request (get json "request")]
-    (if (= "active checks" request)
+    (case request
+      "active checks"
       {"response" "success",
        "data" [(make-datum {"key" "agent.version", "delay" 30,})
                (make-datum {"key" "system.uptime", "delay" 30,})]}
-      "")))
+      ;; Next comes the  default case if nothing  else matches. FIXME:
+      ;; an empty  string as  json response to  say, request  = "agent
+      ;; data",  so far  did  not  break the  agent.  Even though  the
+      ;; vanilla server replies with a  text string in this particular
+      ;; case (not even json).
+      ""
+      )))
 
 ;; (def server (zserver 10051 zhandler))
 ;; (.close server)
