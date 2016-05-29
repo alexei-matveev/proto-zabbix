@@ -5,7 +5,7 @@
 
 ;;
 ;; The useful work is done in  separate threads started as futures. To
-;; termitate  the chain  of futures  keep  a reference  and close  the
+;; terminate  the chain  of futures  keep  a reference  and close  the
 ;; server-socket.  See tools/nrepl/server.clj in  the clojure repo for
 ;; inspiration:
 ;;
@@ -20,10 +20,9 @@
                 msg-out (handler msg-in)]
             (pprint {:INP msg-in :OUT msg-out})
             (proto/proto-send sock msg-out))))
-      ;; Excpect further connections. This is not a tail call because
-      ;; it returns:
-      (future
-        (zserve server-socket handler)))))
+      ;; Expect further connections. This is a tail call with the fn
+      ;; as the "recursion point":
+      (recur server-socket handler))))
 
 ;; If you dont reply to the initial request of an active agent by e.g.
 ;; sending an empty string the agent will retry in 60 seconds.
@@ -32,6 +31,8 @@
     ;; FIXME: this may spawn a long chain of futures branching for
     ;; every request:
     (future
+      ;; Blocks util someone closes the server-socket. That is why the
+      ;; future around this call:
       (zserve server-socket handler))
     ;; Close this socket to terminate the chanin of futures:
     server-socket))
