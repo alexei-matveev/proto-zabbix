@@ -36,16 +36,20 @@
     ;; Close this socket to terminate the chanin of futures:
     server-socket))
 
+;; FIXME: lastlogsize and mtime required for log items and may be
+;; omitted except for the older agents including 2.2.2 and 2.4.7:
+(defn- make-datum [datum]
+  ;; FIXME: check if they are already present:
+  (-> datum
+      (assoc "lastlogsize" 0)
+      (assoc "mtime" 0)))
+
 (defn- zhandler [json]
   (let [request (get json "request")]
     (if (= "active checks" request)
-      ;; FIXME: lastlogsize and mtime required for log items and may
-      ;; be omitted except for the older agents including 2.2.2:
       {"response" "success",
-       "data" [{"key" "agent.version", "delay" 30,
-                "lastlogsize" 0, "mtime" 0}
-               {"key" "system.uptime", "delay" 30,
-                "lastlogsize" 0, "mtime" 0}]}
+       "data" [(make-datum {"key" "agent.version", "delay" 30,})
+               (make-datum {"key" "system.uptime", "delay" 30,})]}
       "")))
 
 ;; (def server (zserver 10051 zhandler))
