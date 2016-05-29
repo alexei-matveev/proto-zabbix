@@ -60,7 +60,7 @@
 ;; Protocoll is "ZBXD\1" <8 byte length> <json body>. This protocoll
 ;; is used both by agent and server when putting data on the wire.
 ;;
-(defn- read-zbxd [stream]
+(defn- proto-read [stream]
   (let [magic (String. (read-byte-array stream 4))
         ;; Single byte version number, always 1:
         version (.read stream)
@@ -80,7 +80,7 @@
 ;; at tcpdump the vanilla Zabbix agents sends magic+version, size and
 ;; the body in three different rounds, the vanilla server is slightly
 ;; less chatty. We write everything in one step ...
-(defn- write-zbxd [stream json]
+(defn- proto-write [stream json]
   (let [text (json/generate-string json)
         body (.getBytes text)
         length (count body)
@@ -93,8 +93,8 @@
     (.flush stream)))
 
 ;; (def a1 {"request" "active checks", "host" "Zabbix server"})
-;; (write-zbxd (io/output-stream "a1") a1)
-;; (read-zbxd (io/input-stream "a1"))
+;; (proto-write (io/output-stream "a1") a1)
+;; (proto-read (io/input-stream "a1"))
 
 ;;
 ;; Examples of valid key values as text:
@@ -115,7 +115,7 @@
     (.write writer (.getBytes text))
     (.flush writer)
     ;; Response is "ZBXD\1" <8 byte length> <json body>
-    (read-zbxd reader)))
+    (proto-read reader)))
 
 ;; (zabbix-get "localhost" 10050 "agent.version")
 ;; (zabbix-get "localhost" 10050 "vfs.fs.size[/,used]")
@@ -125,8 +125,8 @@
   ;; Dont close the socket here if you are going to send
   ;; replies. Using with-open instead of let would do that:
   (let [stream (io/input-stream socket)]
-    (read-zbxd stream)))
+    (proto-read stream)))
 
 (defn proto-send [socket json]
   (let [stream (io/output-stream socket)]
-    (write-zbxd stream json)))
+    (proto-write stream json)))
