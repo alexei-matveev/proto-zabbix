@@ -18,7 +18,6 @@
         (with-open [sock sock]
           (let [msg-in (proto/proto-recv sock)
                 msg-out (handler msg-in)]
-            (pprint {:INP msg-in :OUT msg-out})
             (proto/proto-send sock msg-out))))
       ;; Expect further connections. This is a tail call with the fn
       ;; as the "recursion point":
@@ -60,9 +59,16 @@
       ""
       )))
 
-;; (def server (zserver 10051 zhandler))
+;; Decorator for the handler:
+(defn- wrap [handler]
+  (fn [msg-in]
+    (let [msg-out (handler msg-in)]
+      (pprint {:INP msg-in :OUT msg-out})
+      msg-out)))
+
+;; (def server (zserver 10051 (wrap zhandler)))
 ;; (.close server)
 
 ;; Terminate with C-c:
 (defn -main [& args]
-  (zserver 10051 zhandler))
+  (zserver 10051 (wrap zhandler)))
