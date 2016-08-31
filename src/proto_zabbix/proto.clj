@@ -11,7 +11,7 @@
     (assert (= m n))
     buf))
 
-;; Zabbix headers provides the size field in little endian. Java data
+;; Zabbix headers provide the size field in little endian. Java data
 ;; streams use big endian unconditionally.  ByteBuffer offers a
 ;; workaround:
 (defn- buf->long [buf]
