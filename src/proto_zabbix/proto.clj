@@ -20,7 +20,7 @@
       (.getLong)))
 
 (defn- long->buf [n]
-  (let [buf (byte-array Long/BYTES)]
+  (let [buf (byte-array 8)]             ; Long/BYTES >= Java 8
     (-> (ByteBuffer/wrap buf)
         (.order ByteOrder/LITTLE_ENDIAN)
         (.putLong n)
@@ -29,7 +29,7 @@
 ;; (buf->long (long->buf 1234567890)) => 1234567890
 
 (defn- read-long [stream]
-  (let [buf (read-byte-array stream Long/BYTES)]
+  (let [buf (read-byte-array stream 8)] ; Long/BYTES >= Java 8
     (buf->long buf)))
 
 (defn- write-long [stream n]
