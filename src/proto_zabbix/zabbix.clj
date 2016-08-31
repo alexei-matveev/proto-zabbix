@@ -44,6 +44,18 @@
       (assoc "lastlogsize" 0)
       (assoc "mtime" 0)))
 
+
+;;
+;; If  an agent  runs on  a non-standard  port other  than 10050,  the
+;; request for  the active checks  will come with  a port number  as a
+;; json field.   This port  is likly only  needed for  passive (server
+;; initiated) checks:
+;;
+;; {"request" "active checks",
+;;  "host" "host.example.com",
+;;  "host_metadata" "Linux host.example.com ...",
+;;  "port" 20050}
+;;
 (defn- zhandler [json]
   (let [request (get json "request")]
     (case request
