@@ -56,15 +56,6 @@
 ;;  "host_metadata" "Linux host.example.com ...",
 ;;  "port" 20050}
 ;;
-;; This is an example request on the server issued by
-;;
-;;     zabbix_sender -z host.example.com -k mysql.queries -o 342.45 -s "host"
-;;
-;; {"request" "sender data",
-;;  "data" [{"host" "host",
-;;           "key" "mysql.queries",
-;;           "value" "342.45"}]
-;;
 (defn- zhandler [json]
   (let [request (get json "request")]
     (case request
@@ -72,11 +63,34 @@
       {"response" "success",
        "data" [(make-datum {"key" "agent.version", "delay" 30,})
                (make-datum {"key" "system.uptime", "delay" 30,})]}
+      ;;
+      ;; Next is  an example  request on the  server issued  by zabbix
+      ;; sender [1] as for example initiated by
+      ;;
+      ;;     zabbix_sender -z host.example.com -k mysql.queries -o
+      ;;     342.45 -s "host"
+      ;;
+      ;; The server will get:
+      ;;
+      ;; {"request" "sender data",
+      ;;  "data" [{"host" "host",
+      ;;           "key" "mysql.queries",
+      ;;           "value" "342.45"}]
+      ;;
+      ;; [1] https://www.zabbix.org/wiki/Docs/protocols/zabbix_sender/2.0
+      ;;
+      ;; FIXME: response is hard coded!
+      ;;
+      "sender data"
+      {"response" "success",
+       "info" "Processed 1 Failed 1 Total 2 Seconds spent 0.000253"}
+      ;;
       ;; Next comes the  default case if nothing  else matches. FIXME:
       ;; an empty  string as  json response to  say, request  = "agent
       ;; data",  so far  did  not  break the  agent.  Even though  the
       ;; vanilla server replies with a  text string in this particular
       ;; case (not even json).
+      ;;
       ""
       )))
 
