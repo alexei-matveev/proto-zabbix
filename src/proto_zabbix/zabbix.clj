@@ -56,6 +56,15 @@
 ;;  "host_metadata" "Linux host.example.com ...",
 ;;  "port" 20050}
 ;;
+;; This is an example request on the server issued by
+;;
+;;     zabbix_sender -z host.example.com -k mysql.queries -o 342.45 -s "host"
+;;
+;; {"request" "sender data",
+;;  "data" [{"host" "host",
+;;           "key" "mysql.queries",
+;;           "value" "342.45"}]
+;;
 (defn- zhandler [json]
   (let [request (get json "request")]
     (case request
