@@ -1,7 +1,7 @@
 (ns proto-zabbix.zabbix
   (:require [proto-zabbix.proto :as proto]
             [clojure.pprint :refer [pprint]])
-  (:import [java.net ServerSocket]))
+  (:import [java.net ServerSocket Socket]))
 
 ;;
 ;; The useful work is done in  separate threads started as futures. To
@@ -36,6 +36,43 @@
     ;; Close this socket to terminate the chanin of futures:
     server-socket))
 
+
+;;
+;; See also Java implementation in Zabbi/J [1]
+;;
+;; [1] https://bitbucket.org/mquigley/zabbixj
+;;
+;; First ask the server for the list of checks to report and their
+;; respective intervals by sending:
+;;
+;; {"request" "active checks",
+;;  "host" "host.example.com",
+;;  "host_metadata" "Proto-Zabbix Agent",}
+;;
+;; The regularly send agent data in this form (not implemented)
+;;
+;; {"request" "agent data",
+;;  "data"
+;;  [{"host" "host.example.com",
+;;    "key" "agent.version",
+;;    "value" "2.4.7",
+;;    "clock" 1474141031,
+;;    "ns" 670229873}],
+;;  "clock" 1474141031,
+;;  "ns" 670248125},
+;;
+(defn zabbix-agent-active
+  "Emulates the behaviour of the active Zabbix agent"
+  [server-host server-port]
+  (with-open [sock (Socket. server-host server-port)]
+    (do
+      (proto/proto-send sock {"request" "active checks",
+                              "host" "host.example.com",
+                              "host_metadata" "Proto-Zabbix Agent"})
+      (proto/proto-recv sock))))
+
+;; (zabbix-agent-active "localhost" 10051)
+
 ;; FIXME: lastlogsize and mtime required for log items and may be
 ;; omitted except for the older agents including 2.2.2 and 2.4.7:
 (defn- make-datum [datum]
@@ -43,7 +80,6 @@
   (-> datum
       (assoc "lastlogsize" 0)
       (assoc "mtime" 0)))
-
 
 ;;
 ;; If  an agent  runs on  a non-standard  port other  than 10050,  the
