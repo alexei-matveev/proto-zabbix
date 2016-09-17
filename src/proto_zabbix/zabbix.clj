@@ -25,7 +25,7 @@
 
 ;; If you dont reply to the initial request of an active agent by e.g.
 ;; sending an empty string the agent will retry in 60 seconds.
-(defn- zserver [port handler]
+(defn- zabbix-server [port handler]
   (let [server-socket (ServerSocket. port)]
     ;; FIXME: this may spawn a long chain of futures branching for
     ;; every request:
@@ -92,7 +92,6 @@
       ;; case (not even json).
       ;;
       "")))
-      
 
 ;; Decorator for the handler:
 (defn- wrap [handler]
@@ -101,9 +100,9 @@
       (pprint {:INP msg-in :OUT msg-out})
       msg-out)))
 
-;; (def server (zserver 10051 (wrap zhandler)))
+;; (def server (zabbix-server 10051 (wrap zhandler)))
 ;; (.close server)
 
 ;; Terminate with C-c:
 (defn -main [& args]
-  (zserver 10051 (wrap zhandler)))
+  (zabbix-server 10051 (wrap zhandler)))
