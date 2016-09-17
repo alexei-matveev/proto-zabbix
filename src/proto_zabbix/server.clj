@@ -1,4 +1,4 @@
-(ns proto-zabbix.zabbix
+(ns proto-zabbix.server
   (:require [proto-zabbix.proto :as proto]
             [clojure.pprint :refer [pprint]])
   (:import [java.net ServerSocket]))
