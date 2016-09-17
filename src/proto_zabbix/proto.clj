@@ -130,3 +130,9 @@
 (defn proto-send [socket json]
   (let [stream (io/output-stream socket)]
     (proto-write stream json)))
+
+;; Send JSON and receive JSON in response. Active agent does this
+;; combo a lot.
+(defn send-recv [socket json]
+  (proto-send socket json)
+  (proto-recv socket))

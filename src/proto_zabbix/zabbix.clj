@@ -49,7 +49,11 @@
 ;;  "host" "host.example.com",
 ;;  "host_metadata" "Proto-Zabbix Agent",}
 ;;
-;; The regularly send agent data in this form (not implemented)
+;; NOTE: Serializing JSON would also convert keywords such as :request
+;; to strings but we are not  using that so far because vanilla Zabbix
+;; appears to use weired keys.
+;;
+;; Then regularly send agent data in this form (not implemented)
 ;;
 ;; {"request" "agent data",
 ;;  "data"
@@ -62,14 +66,12 @@
 ;;  "ns" 670248125},
 ;;
 (defn zabbix-agent-active
-  "Emulates the behaviour of the active Zabbix agent"
+  "Emulates behaviour of an active Zabbix agent"
   [server-host server-port]
   (with-open [sock (Socket. server-host server-port)]
-    (do
-      (proto/proto-send sock {"request" "active checks",
-                              "host" "host.example.com",
-                              "host_metadata" "Proto-Zabbix Agent"})
-      (proto/proto-recv sock))))
+    (proto/send-recv sock {"request" "active checks",
+                           "host" "host.example.com",
+                           "host_metadata" "Proto-Zabbix Agent"})))
 
 ;; (zabbix-agent-active "localhost" 10051)
 
