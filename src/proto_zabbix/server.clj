@@ -60,8 +60,8 @@
     (case request
       "active checks"
       {"response" "success",
-       "data" [(make-datum {"key" "agent.version", "delay" 30})
-               (make-datum {"key" "system.uptime", "delay" 30})]}
+       "data" [(make-datum {"key" "agent.version", "delay" 20})
+               (make-datum {"key" "system.uptime", "delay" 40})]}
       ;;
       ;; Next is  an example  request on the  server issued  by zabbix
       ;; sender [1] as for example initiated by
