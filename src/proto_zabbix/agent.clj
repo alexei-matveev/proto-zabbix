@@ -57,6 +57,7 @@
   (let [refresh-interval (* 1000 30)
         last-refresh (System/currentTimeMillis)
         response (refresh-active-checks server-host server-port)
+        _ (prn response)
         ;; Initialize checks with the timestamp of the last
         ;; report. That didnt yet happen, but pretend it did at the
         ;; beginning of the epoch:
@@ -66,9 +67,7 @@
     ;; delivered. Then spend some time regularly delivering the agent
     ;; data before asking again:
     (loop [last-refresh last-refresh
-           response response
            checks checks]
-      (prn response)
       ;; Inner loop. Spend refresh-interval sending agent data to the
       ;; server.  Send outdated items, then go to sleep for some
       ;; quantum of time to wake up again and check if any further
@@ -102,6 +101,7 @@
         ;; local data:
         (let [current-time (System/currentTimeMillis)
               response (refresh-active-checks server-host server-port)
+              _ (prn response)
               checks (for [c (get response "data")]
                        (let [key (get c "key")
                              ;; Checks are in a list, would like a
@@ -112,7 +112,6 @@
                                                             checks)))]
                          (assoc c :last-value last-value)))]
           (recur current-time
-                 response
                  checks))))))
 
 ;; (zabbix-agent-active "localhost" 10051)
