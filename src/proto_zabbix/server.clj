@@ -61,7 +61,7 @@
       "active checks"
       {"response" "success",
        "data" [(make-datum {"key" "agent.version", "delay" 20})
-               (make-datum {"key" "system.uptime", "delay" 40})]}
+               (make-datum {"key" "system.uptime", "delay" (if (> 0.5 (rand)) 5 40)})]}
       ;;
       ;; Next is  an example  request on the  server issued  by zabbix
       ;; sender [1] as for example initiated by
