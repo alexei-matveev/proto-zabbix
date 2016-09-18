@@ -1,5 +1,5 @@
 (ns proto-zabbix.agent
-  (:require [proto-zabbix.proto :as proto])
+  (:require [proto-zabbix.proto :as p])
   (:import [java.net Socket]))
 
 ;;
@@ -34,10 +34,10 @@
   "Returns server response, blocks until success."
   [server-host server-port]
   (let [ask #(with-open [sock (Socket. server-host server-port)]
-               (proto/send-recv sock
-                                {"request" "active checks",
-                                 "host" "host.example.com",
-                                 "host_metadata" "Proto-Zabbix Agent"}))]
+               (p/send-recv sock
+                            {"request" "active checks",
+                             "host" "host.example.com",
+                             "host_metadata" "Proto-Zabbix Agent"}))]
     (loop []
       (println "Asking for items ...")
       (or (try
