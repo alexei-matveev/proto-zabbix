@@ -31,20 +31,25 @@
 ;;  "ns" 670248125},
 ;;
 (defn- refresh-active-checks
-  "Returns server response or nil on failure."
+  "Returns server response, blocks until success."
   [server-host server-port]
-  (println "Asking for items ...")
-  (try
-    (with-open [sock (Socket. server-host server-port)]
-      (proto/send-recv sock
-                       {"request" "active checks",
-                        "host" "host.example.com",
-                        "host_metadata" "Proto-Zabbix Agent"}))
-    ;; Return nil on failure: (get nil "repsonse") will be nil as
-    ;; well. We could return a list of checks in both cases, empty in
-    ;; case of failure. But that would make a failure to contact the
-    ;; server and a ligimate lack of checks indistinguishable:
-    (catch Exception e nil)))
+  (let [ask #(with-open [sock (Socket. server-host server-port)]
+               (proto/send-recv sock
+                                {"request" "active checks",
+                                 "host" "host.example.com",
+                                 "host_metadata" "Proto-Zabbix Agent"}))]
+    (loop []
+      (println "Asking for items ...")
+      (or (try
+            (let [res (ask)]
+              (and (= "success" (get res "response"))
+                   res))
+            (catch Exception e nil))
+          ;; There is no point to proceed for the active agent if the
+          ;; server is unresponsive. Retry after some interval:
+          (do
+            (Thread/sleep (* 10 1000))
+            (recur))))))
 
 (defn zabbix-agent-active
   "Emulates behaviour of an active Zabbix agent"
@@ -62,42 +67,39 @@
            response response
            checks checks]
       (prn response)
-      (if-not (= "success" (get response "response"))
-        ;; If the server did not deliver, wait before retrying:
-        (Thread/sleep (* 1000 20))
-        ;; Otherwise spend refresh-interval sending agent data to the
-        ;; server.  Inner loop. Send the items, then go to sleep for
-        ;; some quantum of time to wake up again and check if any
-        ;; further action is required. Exit the loop to refresh the
-        ;; item list again:
-        (let [checks (loop [current-time last-refresh
-                            checks checks]
-                       (if (< refresh-interval (- current-time last-refresh))
-                         ;; Time to refresh the list of checks, return the current
-                         ;; state with recent timestamps:
-                         checks
-                         ;; Select those to report to the server:
-                         (let [groups (group-by (fn [c]
-                                                  (let [last-value (get c :last-value)
-                                                        delay (* 1000 (get c "delay"))]
-                                                    (>= (- current-time last-value) delay)))
-                                                checks)
-                               check-now (get groups true)
-                               _ (prn {:OUTDATED check-now})
-                               check-later (get groups false)
-                               ;; update the timestamp:
-                               check-now (for [c check-now]
-                                           (assoc c :last-value current-time))]
-                           (prn {:WOULD-SEND check-now})
-                           (Thread/sleep 1000)
-                           (recur (System/currentTimeMillis)
-                                  (concat check-now check-later)))))]
-          ;; Try refreshing the list of items again. FIXME: server
-          ;; list is authoritative, need taking timestamps from the
-          ;; local data:
-          (recur (System/currentTimeMillis)
-                 (refresh-active-checks server-host server-port)
-                 checks))))))
+      ;; Inner loop. Spend refresh-interval sending agent data to the
+      ;; server.  Send outdated items, then go to sleep for some
+      ;; quantum of time to wake up again and check if any further
+      ;; action is required. Exit the loop to refresh the item list
+      ;; again:
+      (let [checks (loop [current-time last-refresh
+                          checks checks]
+                     (if (< refresh-interval (- current-time last-refresh))
+                       ;; Time to refresh the list of checks, return the current
+                       ;; state with recent timestamps:
+                       checks
+                       ;; Select those to report to the server:
+                       (let [groups (group-by (fn [c]
+                                                (let [last-value (get c :last-value)
+                                                      delay (* 1000 (get c "delay"))]
+                                                  (>= (- current-time last-value) delay)))
+                                              checks)
+                             check-now (get groups true)
+                             _ (prn {:OUTDATED check-now})
+                             check-later (get groups false)
+                             ;; update the timestamp:
+                             check-now (for [c check-now]
+                                         (assoc c :last-value current-time))]
+                         (prn {:WOULD-SEND check-now})
+                         (Thread/sleep 1000)
+                         (recur (System/currentTimeMillis)
+                                (concat check-now check-later)))))]
+        ;; Try refreshing the list of items again. FIXME: server
+        ;; list is authoritative, need taking timestamps from the
+        ;; local data:
+        (recur (System/currentTimeMillis)
+               (refresh-active-checks server-host server-port)
+               checks)))))
 
 ;; (zabbix-agent-active "localhost" 10051)
 
