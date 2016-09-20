@@ -59,7 +59,7 @@
         port (or (:port options) 10051)
         host (or (:host options) "localhost")
         data (for [c checks]
-               (let [[clock ns] (from-millis (:last-value c))]
+               (let [[clock ns] (from-millis (:last-time c))]
                  {"host" host,
                   "key" (get c "key"),
                   "value" (or (get c "value") "ZBX_NOTSUPPORTED"),
@@ -103,13 +103,13 @@
     (let [key (get c "key")
           ;; Checks are in a list, would like a guarantee the key is
           ;; unique there:
-          last-value (reduce (fn [t c]
-                               (if-not (= key (get c "key"))
-                                 t
-                                 (max t (:last-value c))))
-                             0          ; epoch
-                             checks)]
-      (assoc c :last-value last-value))))
+          last-time (reduce (fn [t c]
+                              (if-not (= key (get c "key"))
+                                t
+                                (max t (:last-time c))))
+                            0          ; epoch
+                            checks)]
+      (assoc c :last-time last-time))))
 
 ;; Inner  loop.  Spend  refresh-interval  sending agent  data  to  the
 ;; server.  Send outdated items, then go  to sleep for some quantum of
@@ -130,16 +130,16 @@
         checks
         ;; Select those to report to the server:
         (let [due-now? (fn [check]
-                         (let [last-value (get check :last-value)
+                         (let [last-time (get check :last-time)
                                delay (* 1000 (get check "delay"))]
-                           (>= (- current-time last-value) delay)))
+                           (>= (- current-time last-time) delay)))
               groups (group-by due-now? checks)
               check-now (get groups true)
               check-later (get groups false)
               ;; Update the timestamps, also need to fill the values
               ;; here:
               check-now (for [c check-now]
-                          (assoc c :last-value current-time))]
+                          (assoc c :last-time current-time))]
           ;; Dont send empty loads:
           (if-not (empty? check-now)
             (let [res (send-agent-data! options check-now current-time)]
