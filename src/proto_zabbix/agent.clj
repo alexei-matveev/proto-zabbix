@@ -111,6 +111,23 @@
                             checks)]
       (assoc c :last-time last-time))))
 
+;; Not doing much so far:
+(defn- perform-check [key]
+  (case key
+    "agent.version"
+    "2.4.7 (proto-zabbix)"
+    ;; Otherwise
+    "ZBX_NOTSUPPORTED"))
+
+(defn- update-checks
+  "Takes and returns checks updating the value"
+  [checks current-time]
+  ;; Update the timestamps, also need to fill the values here:
+  (for [c checks]
+    (-> c
+        (assoc :last-time current-time)
+        (assoc "value" (perform-check (get c "key"))))))
+
 ;; Inner  loop.  Spend  refresh-interval  sending agent  data  to  the
 ;; server.  Send outdated items, then go  to sleep for some quantum of
 ;; time  to  wake  up  again  and  check  if  any  further  action  is
@@ -136,10 +153,8 @@
               groups (group-by due-now? checks)
               check-now (get groups true)
               check-later (get groups false)
-              ;; Update the timestamps, also need to fill the values
-              ;; here:
-              check-now (for [c check-now]
-                          (assoc c :last-time current-time))]
+              ;; Fill the values, update timestamps:
+              check-now (update-checks check-now current-time)]
           ;; Dont send empty loads:
           (if-not (empty? check-now)
             (let [res (send-agent-data! options check-now current-time)]
