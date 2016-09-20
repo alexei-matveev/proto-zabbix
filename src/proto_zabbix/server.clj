@@ -44,6 +44,11 @@
       (assoc "lastlogsize" 0)
       (assoc "mtime" 0)))
 
+(defn- info-message
+  "Prepares legacy Zabbox info message"
+  [data]
+  (let [n (count data)]
+    (str "Processed " n " Failed 0 Total " n " Seconds spent 0.0")))
 ;;
 ;; If  an agent  runs on  a non-standard  port other  than 10050,  the
 ;; request for  the active checks  will come with  a port number  as a
@@ -82,7 +87,13 @@
       ;;
       "sender data"
       {"response" "success",
-       "info" "Processed 1 Failed 1 Total 2 Seconds spent 0.000253"}
+       "info" (info-message (get json "data"))}
+      ;;
+      ;; Active checks are processed here:
+      ;;
+      "agent data"
+      {"response" "success",
+       "info" (info-message (get json "data"))}
       ;;
       ;; Next comes the  default case if nothing  else matches. FIXME:
       ;; an empty  string as  json response to  say, request  = "agent
@@ -96,7 +107,8 @@
 (defn- wrap [handler]
   (fn [msg-in]
     (let [msg-out (handler msg-in)]
-      (pprint {:INP msg-in :OUT msg-out})
+      (pprint {:AGENT-REQUEST msg-in,
+               :SERVER-RESPONSE msg-out})
       msg-out)))
 
 ;; (def server (zabbix-server 10051 (wrap zhandler)))
