@@ -90,11 +90,11 @@
         ;; state with recent timestamps:
         checks
         ;; Select those to report to the server:
-        (let [groups (group-by (fn [c]
-                                 (let [last-value (get c :last-value)
-                                       delay (* 1000 (get c "delay"))]
-                                   (>= (- current-time last-value) delay)))
-                               checks)
+        (let [due-now? (fn [check]
+                         (let [last-value (get check :last-value)
+                               delay (* 1000 (get check "delay"))]
+                           (>= (- current-time last-value) delay)))
+              groups (group-by due-now? checks)
               check-now (get groups true)
               _ (prn {:OUTDATED check-now})
               check-later (get groups false)
@@ -103,7 +103,8 @@
                           (assoc c :last-value current-time))]
           (prn {:WOULD-SEND check-now})
           (Thread/sleep 1000)
-          ;; Recur to the function entry point:
+          ;; FIXME: should we try to avoid splitting and merging the
+          ;; check list?
           (recur (concat check-now check-later)
                  (System/currentTimeMillis)))))))
 
