@@ -42,6 +42,13 @@
                     "host" host,
                     "host_metadata" "Proto-Zabbix Agent"}))))
 
+(defn- from-millis
+  "Zabbix uses clock in seconds and remained in nanoseconds"
+  [millis]
+  (let [clock (quot millis 1000),
+        ns (* 1000 1000 (mod millis 1000))]
+    [clock ns]))
+
 ;;
 ;; FIXME: how should we behave on connection failures?
 ;;
@@ -52,18 +59,20 @@
         port (or (:port options) 10051)
         host (or (:host options) "localhost")
         data (for [c checks]
-               {:host host,
-                "key" (get c "key"),
-                "value" (get c "value"),
-                "clock" (quot (:last-value c) 1000),
-                "ns" 0})]
+               (let [[clock ns] (from-millis (:last-value c))]
+                 {:host host,
+                  "key" (get c "key"),
+                  "value" (or (get c "value") "ZBX_NOTSUPPORTED"),
+                  "clock" clock,
+                  "ns" ns}))
+        [clock ns] (from-millis current-time)]
     (prn {:AGENT-DATA data})
     (with-open [sock (Socket. server port)]
       (p/send-recv sock
                    {"request" "agent data",
                     "data" data,
-                    "clock" (quot current-time 1000),
-                    "ns" 0}))))
+                    "clock" clock,
+                    "ns" ns}))))
 
 (defn- get-active-checks!
   "Returns server response, blocks until success."
