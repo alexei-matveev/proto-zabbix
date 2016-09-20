@@ -71,6 +71,39 @@
                              checks)]
       (assoc c :last-value last-value))))
 
+;; Inner  loop.  Spend  refresh-interval  sending agent  data  to  the
+;; server.  Send outdated items, then go  to sleep for some quantum of
+;; time  to  wake  up  again  and  check  if  any  further  action  is
+;; required.  Exit  the loop  to  refresh  the  item list  again.  The
+;; timestamps of  the checks get updated  inside the loop, we  want to
+;; keep them:
+(defn- loop-process-checks
+  "Takes and returns checks"
+  [checks refresh-interval current-time last-refresh]
+  (if (< refresh-interval (- current-time last-refresh))
+    ;; Time to refresh the list of checks, return the current
+    ;; state with recent timestamps:
+    checks
+    ;; Select those to report to the server:
+    (let [groups (group-by (fn [c]
+                             (let [last-value (get c :last-value)
+                                   delay (* 1000 (get c "delay"))]
+                               (>= (- current-time last-value) delay)))
+                           checks)
+          check-now (get groups true)
+          _ (prn {:OUTDATED check-now})
+          check-later (get groups false)
+          ;; update the timestamp:
+          check-now (for [c check-now]
+                      (assoc c :last-value current-time))]
+      (prn {:WOULD-SEND check-now})
+      (Thread/sleep 1000)
+      ;; Recur to the function entry point:
+      (recur (concat check-now check-later)
+             refresh-interval
+             (System/currentTimeMillis)
+             last-refresh))))
+
 (defn zabbix-agent-active
   "Emulates behaviour of an active Zabbix agent"
   [server-host server-port]
@@ -85,34 +118,13 @@
     ;; input of the initial refresh:
     (loop [last-refresh (System/currentTimeMillis)
            checks (refresh! [])]
-      ;; Inner loop. Spend refresh-interval sending agent data to the
-      ;; server.  Send outdated items, then go to sleep for some
-      ;; quantum of time to wake up again and check if any further
-      ;; action is required. Exit the loop to refresh the item list
-      ;; again. The timestamps of the checks get updated inside the
-      ;; loop, we want to keep them:
-      (let [checks (loop [current-time last-refresh
-                          checks checks]
-                     (if (< refresh-interval (- current-time last-refresh))
-                       ;; Time to refresh the list of checks, return the current
-                       ;; state with recent timestamps:
-                       checks
-                       ;; Select those to report to the server:
-                       (let [groups (group-by (fn [c]
-                                                (let [last-value (get c :last-value)
-                                                      delay (* 1000 (get c "delay"))]
-                                                  (>= (- current-time last-value) delay)))
-                                              checks)
-                             check-now (get groups true)
-                             _ (prn {:OUTDATED check-now})
-                             check-later (get groups false)
-                             ;; update the timestamp:
-                             check-now (for [c check-now]
-                                         (assoc c :last-value current-time))]
-                         (prn {:WOULD-SEND check-now})
-                         (Thread/sleep 1000)
-                         (recur (System/currentTimeMillis)
-                                (concat check-now check-later)))))]
+      ;; Inner check loop. Spend refresh-interval sending agent data
+      ;; to the server. Returns the checks where timestamps have been
+      ;; eventually updated:
+      (let [checks (loop-process-checks checks
+                                        refresh-interval
+                                        last-refresh
+                                        last-refresh)]
         ;; Try refreshing the list of items again. FIXME: server list
         ;; is authoritative, need taking timestamps from the local
         ;; data --- supply the current info on the check as input too:
