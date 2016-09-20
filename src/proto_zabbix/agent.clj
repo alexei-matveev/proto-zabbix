@@ -42,6 +42,29 @@
                     "host" host,
                     "host_metadata" "Proto-Zabbix Agent"}))))
 
+;;
+;; FIXME: how should we behave on connection failures?
+;;
+(defn- send-agent-data!
+  "Sends agent data to the server"
+  [options checks current-time]
+  (let [server (or (:server options) "localhost")
+        port (or (:port options) 10051)
+        host (or (:host options) "localhost")
+        data (for [c checks]
+               {:host host,
+                "key" (get c "key"),
+                "value" (get c "value"),
+                "clock" (quot (:last-value c) 1000),
+                "ns" 0})]
+    (prn {:AGENT-DATA data})
+    (with-open [sock (Socket. server port)]
+      (p/send-recv sock
+                   {"request" "agent data",
+                    "data" data,
+                    "clock" (quot current-time 1000),
+                    "ns" 0}))))
+
 (defn- get-active-checks!
   "Returns server response, blocks until success."
   [options]
@@ -82,7 +105,7 @@
 ;; keep them:
 (defn- process-checks
   "Takes and returns checks"
-  [checks refresh-interval]
+  [options checks refresh-interval]
   (let [current-time (System/currentTimeMillis)
         deadline (+ current-time refresh-interval)]
     (loop [checks checks
@@ -98,12 +121,16 @@
                            (>= (- current-time last-value) delay)))
               groups (group-by due-now? checks)
               check-now (get groups true)
-              _ (prn {:OUTDATED check-now})
               check-later (get groups false)
-              ;; update the timestamp:
+              ;; Update the timestamps, also need to fill the values
+              ;; here:
               check-now (for [c check-now]
                           (assoc c :last-value current-time))]
-          (prn {:WOULD-SEND check-now})
+          ;; Dont send empty loads:
+          (if-not (empty? check-now)
+            (let [res (send-agent-data! options check-now current-time)]
+              (prn {:RESPONSE res}))
+            (prn "."))
           (Thread/sleep 1000)
           ;; FIXME: should we try to avoid splitting and merging the
           ;; check list?
@@ -126,7 +153,8 @@
       ;; Inner check loop. Spend refresh-interval sending agent data
       ;; to the server. Returns the checks where timestamps have been
       ;; eventually updated:
-      (let [checks (process-checks checks
+      (let [checks (process-checks options
+                                   checks
                                    refresh-interval)]
         ;; Try refreshing the list of items again. FIXME: server list
         ;; is authoritative, need taking timestamps from the local
