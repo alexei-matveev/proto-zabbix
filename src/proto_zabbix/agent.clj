@@ -32,8 +32,9 @@
 ;;
 (defn- request-active-checks!
   "Returns server response, or fails."
-  [server-host server-port]
-  (with-open [sock (Socket. server-host server-port)]
+  [options]
+  (with-open [sock (Socket. (or (:server options) "localhost")
+                            (or (:port options) 10051))]
     (p/send-recv sock
                  {"request" "active checks",
                   "host" "host.example.com",
@@ -41,11 +42,11 @@
 
 (defn- get-active-checks!
   "Returns server response, blocks until success."
-  [server-host server-port]
+  [options]
   (loop []
     (println "Asking for items ...")
     (or (try
-          (let [res (request-active-checks! server-host server-port)]
+          (let [res (request-active-checks! options)]
             (and (= "success" (get res "response"))
                  res))
           (catch Exception e nil))
@@ -108,10 +109,10 @@
 
 (defn zabbix-agent-active
   "Emulates behaviour of an active Zabbix agent"
-  [server-host server-port]
+  [options]
   (let [refresh-interval (* 1000 30)
         refresh! (fn [checks]
-                   (let [response (get-active-checks! server-host server-port)]
+                   (let [response (get-active-checks! options)]
                      (prn response)
                      (refresh-checks checks response)))]
     ;; Outer refresh loop. Ask the server for the items to be
@@ -129,10 +130,7 @@
         ;; data --- supply the current info on the check as input too:
         (recur (refresh! checks))))))
 
-
-
-;; (zabbix-agent-active "localhost" 10051)
-
 ;; Terminate with C-c:
 (defn -main [& args]
-  (zabbix-agent-active "localhost" 10051))
+  (zabbix-agent-active {:server "localhost",
+                        :port 10051}))
