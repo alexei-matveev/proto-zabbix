@@ -43,36 +43,41 @@
                     "host_metadata" "Proto-Zabbix Agent"}))))
 
 (defn- from-millis
-  "Zabbix uses clock in seconds and remained in nanoseconds"
+  "Zabbix clocks in seconds and remainder in nanoseconds"
   [millis]
   (let [clock (quot millis 1000),
         ns (* 1000 1000 (mod millis 1000))]
     [clock ns]))
 
 ;;
-;; FIXME: how should we behave on connection failures?
+;; Try sending agent data, return nil on failure.
 ;;
 (defn- send-agent-data!
-  "Sends agent data to the server"
+  "Sends agent data to the server, returns nil on failure"
   [options checks current-time]
   (let [server (or (:server options) "localhost")
         port (or (:port options) 10051)
         host (or (:host options) "localhost")
         data (for [c checks]
                (let [[clock ns] (from-millis (:last-value c))]
-                 {:host host,
+                 {"host" host,
                   "key" (get c "key"),
                   "value" (or (get c "value") "ZBX_NOTSUPPORTED"),
                   "clock" clock,
                   "ns" ns}))
         [clock ns] (from-millis current-time)]
     (prn {:AGENT-DATA data})
-    (with-open [sock (Socket. server port)]
-      (p/send-recv sock
-                   {"request" "agent data",
-                    "data" data,
-                    "clock" clock,
-                    "ns" ns}))))
+    (try
+      (with-open [sock (Socket. server port)]
+        (p/send-recv sock
+                     {"request" "agent data",
+                      "data" data,
+                      "clock" clock,
+                      "ns" ns}))
+      ;; Return nil on failure, this makes nil JSON response
+      ;; indistinguishable from a failure. Hopefully Zabbix server
+      ;; does not mean to sen a JSON "null":
+      (catch Exception e nil))))
 
 (defn- get-active-checks!
   "Returns server response, blocks until success."
