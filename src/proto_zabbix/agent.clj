@@ -33,12 +33,14 @@
 (defn- request-active-checks!
   "Returns server response, or fails."
   [options]
-  (with-open [sock (Socket. (or (:server options) "localhost")
-                            (or (:port options) 10051))]
-    (p/send-recv sock
-                 {"request" "active checks",
-                  "host" "host.example.com",
-                  "host_metadata" "Proto-Zabbix Agent"})))
+  (let [server (or (:server options) "localhost")
+        port (or (:port options) 10051)
+        host (or (:host options) "localhost")]
+    (with-open [sock (Socket. server port)]
+      (p/send-recv sock
+                   {"request" "active checks",
+                    "host" host,
+                    "host_metadata" "Proto-Zabbix Agent"}))))
 
 (defn- get-active-checks!
   "Returns server response, blocks until success."
@@ -134,4 +136,5 @@
 ;; Terminate with C-c:
 (defn -main [& args]
   (zabbix-agent-active {:server "localhost",
-                        :port 10051}))
+                        :port 10051
+                        :host "host.example.com"}))
