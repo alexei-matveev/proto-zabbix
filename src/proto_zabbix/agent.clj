@@ -117,25 +117,30 @@
                             checks)]
       (assoc c :last-time last-time))))
 
-;; Not doing much so far:
-(defn- perform-check [key]
+;; Not doing much so far. This roughly corresponds to the standard
+;; Zabbix Agent template:
+(defn- perform-check [options key]
   (case key
     "agent.version"
     "2.4.7 (proto-zabbix)"
     ;;
     "agent.ping"
     1
+    ;;
+    "agent.hostname"
+    (:host options)
     ;; Otherwise
     "ZBX_NOTSUPPORTED"))
 
 (defn- update-checks
   "Takes and returns checks updating the value"
-  [checks current-time]
+  [options checks current-time]
   ;; Update the timestamps, also need to fill the values here:
   (for [c checks]
     (-> c
         (assoc :last-time current-time)
-        (assoc "value" (perform-check (get c "key"))))))
+        (assoc "value" (perform-check options
+                                      (get c "key"))))))
 
 ;; Inner  loop.  Spend  refresh-interval  sending agent  data  to  the
 ;; server.  Send outdated items, then go  to sleep for some quantum of
@@ -163,7 +168,9 @@
               check-now (get groups true)
               check-later (get groups false)
               ;; Fill the values, update timestamps:
-              check-now (update-checks check-now current-time)]
+              check-now (update-checks options
+                                       check-now
+                                       current-time)]
           ;; Dont send empty loads:
           (if-not (empty? check-now)
             (let [res (send-agent-data! options check-now current-time)]
