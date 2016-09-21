@@ -79,6 +79,11 @@
       ;; does not mean to sen a JSON "null":
       (catch Exception e nil))))
 
+;;
+;; So far we will also block on a valid response alone these lines:
+;;
+;; {"response" "failed", "info" "host [host.example.com] not found"}
+;;
 (defn- get-active-checks!
   "Returns server response, blocks until success."
   [options]
@@ -86,6 +91,7 @@
     (println "Asking for items ...")
     (or (try
           (let [res (request-active-checks! options)]
+            (prn {:ACTIVE-CHECKS res})
             (and (= "success" (get res "response"))
                  res))
           (catch Exception e nil))
