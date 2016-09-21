@@ -44,11 +44,16 @@
       (assoc "lastlogsize" 0)
       (assoc "mtime" 0)))
 
+;;
+;; 2.4.7 replies like this:
+;;
+;; processed: 1; failed: 0; total: 1; seconds spent: 0.000099
+;;
 (defn- info-message
   "Prepares legacy Zabbox info message"
   [data]
   (let [n (count data)]
-    (str "Processed " n " Failed 0 Total " n " Seconds spent 0.0")))
+    (str "processed: " n "; failed: 0; total: " n "; seconds spent: 0.0")))
 ;;
 ;; If  an agent  runs on  a non-standard  port other  than 10050,  the
 ;; request for  the active checks  will come with  a port number  as a
