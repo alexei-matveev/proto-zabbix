@@ -122,6 +122,9 @@
   (case key
     "agent.version"
     "2.4.7 (proto-zabbix)"
+    ;;
+    "agent.ping"
+    1
     ;; Otherwise
     "ZBX_NOTSUPPORTED"))
 
