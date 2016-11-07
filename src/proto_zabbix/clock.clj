@@ -1,5 +1,7 @@
 (ns proto-zabbix.clock)
 
+;; FIXME: this  was split off  for re-use in agent.clj  and proto.clj,
+;; but the latter may actually not need it!
 (defn from-millis
   "Zabbix clocks in seconds and remainder in nanoseconds"
   [millis]

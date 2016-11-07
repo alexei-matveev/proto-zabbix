@@ -1,5 +1,6 @@
 (ns proto-zabbix.proto
-  (:require [clojure.java.io :as io]
+  (:require [proto-zabbix.clock :as c]
+            [clojure.java.io :as io]
             [cheshire.core :as json])
   (:import [java.nio ByteBuffer ByteOrder]
            [java.io ByteArrayOutputStream]
@@ -143,9 +144,13 @@
   "Example on sending item data to the server. The data is supposed to
   be JSON with host-, key-, and value fields"
   [host port data]
-  (let [request {:request "sender data",
+  ;; FIXME: contrary to what the wiki docs suggest, zabbix_sender does
+  ;; not sent clock  if that was not supplied with  the each datum. So
+  ;; maybe we should not either?
+  (let [[clock _] (c/from-millis (System/currentTimeMillis))
+        request {:request "sender data",
                  :data data,
-                 :clock 1381482905 #_FIXME!}]
+                 :clock clock}]
     (with-open [sock (Socket. host port)]
       (send-recv sock request))))
 
