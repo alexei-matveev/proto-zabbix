@@ -1,5 +1,6 @@
 (ns proto-zabbix.agent
   (:require [proto-zabbix.proto :as p])
+  (:require [proto-zabbix.clock :as c])
   (:import [java.net Socket]))
 
 ;;
@@ -42,13 +43,6 @@
                     "host" host,
                     "host_metadata" "Proto-Zabbix Agent"}))))
 
-(defn- from-millis
-  "Zabbix clocks in seconds and remainder in nanoseconds"
-  [millis]
-  (let [clock (quot millis 1000),
-        ns (* 1000 1000 (mod millis 1000))]
-    [clock ns]))
-
 ;;
 ;; Try sending agent data, return nil on failure.
 ;;
@@ -59,13 +53,13 @@
         port (or (:port options) 10051)
         host (or (:host options) "localhost")
         data (for [c checks]
-               (let [[clock ns] (from-millis (:last-time c))]
+               (let [[clock ns] (c/from-millis (:last-time c))]
                  {"host" host,
                   "key" (get c "key"),
                   "value" (or (get c "value") "ZBX_NOTSUPPORTED"),
                   "clock" clock,
                   "ns" ns}))
-        [clock ns] (from-millis current-time)]
+        [clock ns] (c/from-millis current-time)]
     (prn {:AGENT-DATA data})
     (try
       (with-open [sock (Socket. server port)]
