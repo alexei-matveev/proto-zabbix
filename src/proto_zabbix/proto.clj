@@ -135,3 +135,22 @@
 (defn send-recv [socket json]
   (proto-send socket json)
   (proto-recv socket))
+
+;;
+;; [1] https://www.zabbix.org/wiki/Docs/protocols/zabbix_sender/2.0
+;;
+(defn zabbix-sender
+  "Example on sending item data to the server. The data is supposed to
+  be JSON with host-, key-, and value fields"
+  [host port data]
+  (let [request {:request "sender data",
+                 :data data,
+                 :clock 1381482905 #_FIXME!}]
+    (with-open [sock (Socket. host port)]
+      (send-recv sock request))))
+
+;; (zabbix-sender "localhost"
+;;                10051
+;;                [{:host "some host",
+;;                  :key "my.key",
+;;                  :value 42}])
