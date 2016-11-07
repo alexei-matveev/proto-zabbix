@@ -13,7 +13,7 @@
   [^ServerSocket server-socket handler]
   (when-not (.isClosed server-socket)
     (let [sock (.accept server-socket)]
-      ;; Branch a future to handle this connection:
+      ;; Fork a future to handle this connection:
       (future
         (with-open [sock sock]
           (let [msg-in (proto/proto-recv sock)
@@ -86,9 +86,14 @@
       ;;           "key" "mysql.queries",
       ;;           "value" "342.45"}]
       ;;
-      ;; [1] https://www.zabbix.org/wiki/Docs/protocols/zabbix_sender/2.0
+      ;; FIXME:  The wiki  text on  the protocol  [1] claims  that the
+      ;; Zabbix header  (ZBXD with length)  is optional in  the recent
+      ;; versions. Moreover  the length is  supposed to be  ignored by
+      ;; the server when the header is  supplied. This is not the case
+      ;; here so far. Also note  that the 2.4 version of zabbix_sender
+      ;; appears to inter-operate with our code.
       ;;
-      ;; FIXME: response is hard coded!
+      ;; [1] https://www.zabbix.org/wiki/Docs/protocols/zabbix_sender/2.0
       ;;
       "sender data"
       {"response" "success",
