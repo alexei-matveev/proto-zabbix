@@ -97,6 +97,22 @@
 ;; (proto-write (io/output-stream "a1") a1)
 ;; (proto-read (io/input-stream "a1"))
 
+(defn proto-recv [socket]
+  ;; Dont close the socket here if you are going to send
+  ;; replies. Using with-open instead of let would do that:
+  (let [stream (io/input-stream socket)]
+    (proto-read stream)))
+
+(defn proto-send [socket json]
+  (let [stream (io/output-stream socket)]
+    (proto-write stream json)))
+
+;; Send JSON and receive JSON in response. Active agent does this
+;; combo a lot.
+(defn send-recv [socket json]
+  (proto-send socket json)
+  (proto-recv socket))
+
 ;;
 ;; Examples of valid key values as text [1]:
 ;;
@@ -120,22 +136,6 @@
 ;; (zabbix-get "localhost" 10050 "agent.version")
 ;; (zabbix-get "localhost" 10050 "vfs.fs.size[/,used]")
 ;; (zabbix-get "localhost" 10050 "vfs.fs.discovery")
-
-(defn proto-recv [socket]
-  ;; Dont close the socket here if you are going to send
-  ;; replies. Using with-open instead of let would do that:
-  (let [stream (io/input-stream socket)]
-    (proto-read stream)))
-
-(defn proto-send [socket json]
-  (let [stream (io/output-stream socket)]
-    (proto-write stream json)))
-
-;; Send JSON and receive JSON in response. Active agent does this
-;; combo a lot.
-(defn send-recv [socket json]
-  (proto-send socket json)
-  (proto-recv socket))
 
 ;;
 ;; [1] https://www.zabbix.org/wiki/Docs/protocols/zabbix_sender/2.0
