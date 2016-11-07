@@ -97,14 +97,13 @@
 ;; (proto-read (io/input-stream "a1"))
 
 ;;
-;; Examples of valid key values as text:
+;; Examples of valid key values as text [1]:
 ;;
-;; agent.version
-;; vfs.fs.discovery
-;; vfs.fs.size[/,used]
+;;     agent.version
+;;     vfs.fs.discovery
+;;     vfs.fs.size[/,used]
 ;;
-;; See e.g.:
-;; https://www.zabbix.com/documentation/2.4/manual/appendix/items/supported_by_platform
+;; [1] https://www.zabbix.com/documentation/2.4/manual/appendix/items/supported_by_platform
 ;;
 (defn zabbix-get
   "Sends an TCP request to the specified host and port"
