@@ -107,9 +107,7 @@
       ;;
       ;; Next comes the  default case if nothing  else matches. FIXME:
       ;; an empty  string as  json response to  say, request  = "agent
-      ;; data",  so far  did  not  break the  agent.  Even though  the
-      ;; vanilla server replies with a  text string in this particular
-      ;; case (not even json).
+      ;; data", so far did not break the agent.
       ;;
       "")))
 
