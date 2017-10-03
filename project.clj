@@ -7,5 +7,5 @@
                  [cheshire "5.6.1"]]
   ;; lein run will start an emulator of a Zabbix server:
   :main ^:skip-aot proto-zabbix.server
-  :target-path "target/%s"
-  :profiles {:uberjar {:aot :all}})
+  ;; :profiles {:uberjar {:aot :all}}
+  :target-path "target/%s")
