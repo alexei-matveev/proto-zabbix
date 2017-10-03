@@ -3,10 +3,10 @@
             [clojure.java.io :as io]
             [cheshire.core :as json])
   (:import [java.nio ByteBuffer ByteOrder]
-           [java.io ByteArrayOutputStream]
+           [java.io InputStream ByteArrayOutputStream]
            [java.net Socket]))
 
-(defn- read-byte-array [stream n]
+(defn- read-byte-array ^bytes [^InputStream stream n]
   (let [buf (byte-array n)
         m (.read stream buf)]
     (assert (= m n))
@@ -124,7 +124,7 @@
 ;;
 (defn zabbix-get
   "Sends an TCP request to the specified host and port"
-  [host port text]
+  [^String host ^long port text]
   (with-open [sock (Socket. host port)
               writer (io/output-stream sock)
               reader (io/input-stream sock)]
@@ -143,7 +143,7 @@
 (defn zabbix-sender
   "Example on sending item data to the server. The data is supposed to
   be JSON with host-, key-, and value fields"
-  [host port data]
+  [^String host ^long port data]
   ;; FIXME: contrary to what the wiki docs suggest, zabbix_sender does
   ;; not sent clock  if that was not supplied with  the each datum. So
   ;; maybe we should not either?
