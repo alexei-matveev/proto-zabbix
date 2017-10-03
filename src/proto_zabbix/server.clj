@@ -76,13 +76,15 @@
                ;; syslog is not:
                (make-datum {"key" "log[/var/log/zabbix-agent/zabbix_agentd.log]", "delay" 30})]}
       ;;
-      ;; Next is  an example  request on the  server issued  by zabbix
-      ;; sender [1] as for example initiated by
+      ;; Active checks and sender data are processed here ...
+      ;;
+      ;; A  request  issued  by  zabbix  sender  [1]  as  for  example
+      ;; initiated by
       ;;
       ;;     zabbix_sender -z host.example.com -k mysql.queries -o
       ;;     342.45 -s "host"
       ;;
-      ;; The server will get:
+      ;; will read:
       ;;
       ;; {"request" "sender data",
       ;;  "data" [{"host" "host",
@@ -97,12 +99,6 @@
       ;; appears to inter-operate with our code.
       ;;
       ;; [1] https://www.zabbix.org/wiki/Docs/protocols/zabbix_sender/2.0
-      ;;
-      "sender data"
-      {"response" "success",
-       "info" (info-message (get json "data"))}
-      ;;
-      ;; Active checks are processed here ...
       ;;
       ;; The log data comes in  a relatively inefficient format --- as
       ;; a JSON map  with host, key, value, lastlogsize,  clock and ns
@@ -125,7 +121,7 @@
       ;; the log file  on the server side to avoid  reposts upon agent
       ;; restarts.
       ;;
-      "agent data"
+      ("sender data" "agent data")
       (let [agent-data (get json "data")
             server-response (info-message agent-data)]
         {"response" "success",
