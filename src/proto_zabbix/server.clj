@@ -27,6 +27,7 @@
 ;; If you dont reply to the initial request of an active agent by e.g.
 ;; sending an empty string the agent will retry in 60 seconds.
 (defn- zabbix-server [port handler]
+  (println "hello from server")
   (let [server-socket (ServerSocket. port)]
     ;; The  function  zserve  will  blocks  util  someone  closes  the
     ;; server-socket. That is  why the future around the  call. Here a
@@ -137,19 +138,28 @@
 (defn- new-q []
   (LinkedBlockingDeque.))
 
-;; Puts x to the back of queue  q. You cannot put nil there.  By local
-;; convention putting  the sentinel value  into the queue  will signal
-;; termination.  Consumers should put the sentinel value back as there
-;; might  be  more  than  one consumer!   By  another  convention  the
-;; sentinel value for the queue is the queue object itself.
+;; Puts an  object to the back  of queue. By local  convention putting
+;; the  sentinel  value  into   the  queue  will  signal  termination.
+;; Consumers will put  the sentinel value back as there  might be more
+;; than  one consumer.   The sentinel  value is  nil.  However  as the
+;; LinkedBlockingDeque  cannot handle  that  we use  the queue  object
+;; itself internally.
 (defn- offer! [^LinkedBlockingDeque q x]
-  (.offer q x)
-  q)
+  (if-not (nil? x)
+    (.offer q x)
+    (.offer q q)))
 
 ;; Takes from  the front of  queue.  If  queue is empty,  blocks until
-;; something is offered into it.
+;; something is offered into it.  Returns nil if the sentinel value is
+;; detected. The caller does not need  to put the sentinel value back,
+;; we take care of that here.
 (defn- take! [^LinkedBlockingDeque q]
-  (.take q))
+  (let [x (.take q)]
+    (if-not (= x q)
+      x
+      (do
+        (offer! q q)
+        nil))))
 
 ;; Decorator for the handler:
 (defn- wrap [handler]
@@ -169,16 +179,12 @@
         server {:sock sock :q q}]
     ;; Drain the queue here:
     (future
-      (loop [x (take! q)]
-        (if-not (= x q)
+      (loop []
+        (if-let [x (take! q)]
           (do
             (println x)
-            (recur (take! q)))
-          (do
-            ;; In  case there  is more  than one  consumer, put  the
-            ;; sentinel value back:
-            (offer! q q)
-            (println "worker finished!")))))
+            (recur))
+          (println "worker finished!"))))
     server))
 
 (defn- stop-server! [server]
@@ -186,9 +192,9 @@
   (.close (:sock server))
   (println "tell workers to exit ...")
   ;; Tell consumers  to exit by  putting the sentinel object  into the
-  ;; queue. By convention the sentinel object is the queue itself:
+  ;; queue.
   (let [q (:q server)]
-    (offer! q q))
+    (offer! q nil))
   (println "done!"))
 
 ;; Terminate with C-c:
