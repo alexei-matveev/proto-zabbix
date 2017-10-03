@@ -110,15 +110,15 @@
 ;;      "host_metadata" "Linux host.example.com ...",
 ;;      "port" 20050}
 ;;
-(defn- zhandler [json]
+(defn- zabbix-handler [json]
   (let [request (get json "request")]
     (case request
 
       ;; Agent asks what the server wants to know:
       "active checks"
       {"response" "success",
-       "data" [#_(make-datum {"key" "agent.version", "delay" 30})
-               #_(make-datum {"key" "system.uptime", "delay" (if (> 0.5 (rand)) 5 40)})
+       "data" [(make-datum {"key" "agent.version", "delay" 30})
+               (make-datum {"key" "system.uptime", "delay" (if (> 0.5 (rand)) 5 40)})
                ;; The log file should be readable for the zabbix user,
                ;; syslog is not:
                (make-datum {"key" "log[/var/log/zabbix-agent/zabbix_agentd.log]", "delay" 30})]}
@@ -147,10 +147,11 @@
 
 (defn- start-server! []
   (let [q (q/make-queue)
-        q-source (fn [x]
-                   (q/offer! q x)
-                   (zhandler x))
-        sock (zabbix-server 10051 q-source)
+        handler-1 (wrap zabbix-handler)
+        handler-2 (fn [x]
+                    (q/offer! q x)
+                    (handler-1 x))
+        sock (zabbix-server 10051 handler-2)
         ;; "Opaque" to pass to stop-server!
         server {:sock sock :q q}]
     ;; Drain the queue here:
@@ -158,7 +159,7 @@
       (loop []
         (if-let [x (q/take! q)]
           (do
-            (println x)
+            (println {:worker x})
             (recur))
           (println "worker finished!"))))
     server))
