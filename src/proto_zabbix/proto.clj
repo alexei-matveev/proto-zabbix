@@ -3,7 +3,7 @@
             [clojure.java.io :as io]
             [cheshire.core :as json])
   (:import [java.nio ByteBuffer ByteOrder]
-           [java.io InputStream ByteArrayOutputStream]
+           [java.io InputStream OutputStream ByteArrayOutputStream]
            [java.net Socket]))
 
 (defn- read-byte-array ^bytes [^InputStream stream n]
@@ -20,7 +20,7 @@
       (.order ByteOrder/LITTLE_ENDIAN)
       (.getLong)))
 
-(defn- long->buf [n]
+(defn- long->buf ^bytes [n]
   (let [buf (byte-array 8)]             ; Long/BYTES >= Java 8
     (-> (ByteBuffer/wrap buf)
         (.order ByteOrder/LITTLE_ENDIAN)
@@ -33,7 +33,7 @@
   (let [buf (read-byte-array stream 8)] ; Long/BYTES >= Java 8
     (buf->long buf)))
 
-(defn- write-long [stream n]
+(defn- write-long [^OutputStream stream n]
   (let [buf (long->buf n)]
     (.write stream buf)))
 
@@ -61,7 +61,7 @@
 ;; Protocoll is "ZBXD\1" <8 byte length> <json body>. This protocoll
 ;; is used both by agent and server when putting data on the wire.
 ;;
-(defn- proto-read [stream]
+(defn- proto-read [^InputStream stream]
   (let [magic (String. (read-byte-array stream 4))
         ;; Single byte version number, always 1:
         version (.read stream)
@@ -81,7 +81,7 @@
 ;; at tcpdump the vanilla Zabbix agents sends magic+version, size and
 ;; the body in three different rounds, the vanilla server is slightly
 ;; less chatty. We write everything in one step ...
-(defn- proto-write [stream json]
+(defn- proto-write [^OutputStream stream json]
   (let [text (json/generate-string json)
         body (.getBytes text)
         length (count body)
@@ -124,7 +124,7 @@
 ;;
 (defn zabbix-get
   "Sends an TCP request to the specified host and port"
-  [^String host ^long port text]
+  [^String host ^long port ^String text]
   (with-open [sock (Socket. host port)
               writer (io/output-stream sock)
               reader (io/input-stream sock)]
