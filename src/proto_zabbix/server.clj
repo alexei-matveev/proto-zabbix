@@ -4,23 +4,6 @@
   (:import [java.net ServerSocket]
            [java.util.concurrent LinkedBlockingDeque]))
 
-
-;; See https://gist.github.com/mjg123/1305115
-(defn- new-q []
-  (LinkedBlockingDeque.))
-
-(defn- offer!
-  "Adds x to the back of queue q"
-  [^LinkedBlockingDeque q x]
-  (.offer q x)
-  q)
-
-(defn- take!
-  "Takes from the front of queue q.  If q is empty, blocks until
-  something is offer!ed into it"
-  [^LinkedBlockingDeque q]
-  (.take q))
-
 ;;
 ;; The useful work is done in  separate threads started as futures. To
 ;; terminate  the chain  of futures  keep  a reference  and close  the
@@ -149,6 +132,44 @@
       ;; data", so far did not break the agent.
       ;;
       "")))
+
+;; See e.g. https://gist.github.com/mjg123/1305115
+(defn- new-q []
+  (LinkedBlockingDeque.))
+
+;; Adds x to the back of queue q
+(defn- offer! [^LinkedBlockingDeque q x]
+  (.offer q x)
+  q)
+
+;; Takes from the front of queue q.  If q is empty, blocks until
+;; something is offered into it
+(defn- take! [^LinkedBlockingDeque q]
+  (.take q))
+
+;; Putting the queue  Object into the queue will signal  The End. Make
+;; sure not to take the EOQ sentinel  from the queue as there might be
+;; more than one consumer to get notified:
+(defn- eoq! [^LinkedBlockingDeque q]
+  (offer! q q))
+
+(defn- eoq? [^LinkedBlockingDeque q]
+  ;; Peek returns nil if the queue is empty:
+  (= q (.peek q)))
+
+(defn- wrap-deque [handler]
+  (let [q (new-q)]
+    ;; FIXME: forever:
+    (future
+      (loop [x (take! q)]
+        (println {:from-queue-processor x})
+        (recur (take! q))))
+    ;; Decorated handler posts the message to the queue and handles it
+    ;; on its own. Handlers run  in separate threads, any exception is
+    ;; not immediately visible:
+    (fn [msg]
+      (offer! q msg)
+      (handler msg))))
 
 ;; Decorator for the handler:
 (defn- wrap [handler]
