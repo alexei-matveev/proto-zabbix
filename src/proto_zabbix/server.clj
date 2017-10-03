@@ -121,12 +121,13 @@
 
 ;;
 ;; For C-x C-e in CIDER. Make sure to stop Zabbix agent when done with
-;; experiments.  Otherwise it will cache the data it did not manage to
-;; send to the server.
+;; experiments.  Otherwise the agent will cache data it did not manage
+;; to send to the server.
 ;;
-;; (def server (zabbix-server 10051 (wrap zhandler)))
-;; (.close server)
-;;
+(comment
+  (do
+    (.close server)
+    (def server (zabbix-server 10051 (wrap zhandler)))))
 
 ;; Terminate with C-c:
 (defn -main [& args]
