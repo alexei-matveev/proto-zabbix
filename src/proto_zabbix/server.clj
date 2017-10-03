@@ -5,9 +5,9 @@
   (:import [java.net ServerSocket]))
 
 ;;
-;; The useful work is done in  separate threads started as futures. To
+;; Useful  work is  done in  separate threads  started as  futures. To
 ;; terminate  the chain  of futures  keep  a reference  and close  the
-;; server-socket.  See tools/nrepl/server.clj in  the clojure repo for
+;; server socket.  See tools/nrepl/server.clj  in the clojure repo for
 ;; inspiration:
 ;;
 (defn- zserve
@@ -37,8 +37,9 @@
     ;; Close this socket to terminate the chanin of futures:
     server-socket))
 
-;; FIXME: lastlogsize and mtime required for log items and may be
-;; omitted except for the older agents including 2.2.2 and 2.4.7:
+;; FIXME:  lastlogsize and  mtime required  for log  items. Some  docs
+;; claim they  may be omitted but  that is likely wrong  for agents as
+;; revent as 2.2.2 and 2.4.7:
 (defn- make-datum [datum]
   ;; FIXME: check if they are already present:
   (-> datum
@@ -48,7 +49,7 @@
 ;;
 ;; 2.4.7 replies like this:
 ;;
-;; processed: 1; failed: 0; total: 1; seconds spent: 0.000099
+;;     processed: 1; failed: 0; total: 1; seconds spent: 0.000099
 ;;
 (defn- info-message
   "Prepares legacy Zabbox info message"
