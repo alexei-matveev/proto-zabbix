@@ -70,8 +70,11 @@
     (case request
       "active checks"
       {"response" "success",
-       "data" [(make-datum {"key" "agent.version", "delay" 20})
-               (make-datum {"key" "system.uptime", "delay" (if (> 0.5 (rand)) 5 40)})]}
+       "data" [#_(make-datum {"key" "agent.version", "delay" 30})
+               #_(make-datum {"key" "system.uptime", "delay" (if (> 0.5 (rand)) 5 40)})
+               ;; The log file should be readable for the zabbix user,
+               ;; syslog is not:
+               (make-datum {"key" "log[/var/log/zabbix-agent/zabbix_agentd.log]", "delay" 30})]}
       ;;
       ;; Next is  an example  request on the  server issued  by zabbix
       ;; sender [1] as for example initiated by
@@ -99,7 +102,25 @@
       {"response" "success",
        "info" (info-message (get json "data"))}
       ;;
-      ;; Active checks are processed here:
+      ;; Active checks are processed here ...
+      ;;
+      ;; The log data comes in  a relatively inefficient format --- as
+      ;; a JSON map  with host, key, value, lastlogsize,  clock and ns
+      ;; field  for each  log line.   There  is no  mtime field.   The
+      ;; presense of  the lastlogsize  may help  telling the  log data
+      ;; from  other kinds  of data.   The clock  & ns  are not  quite
+      ;; usefull  as they  encode the  time the  line was  consumed by
+      ;; zabbix agent  --- thus  different for each  log line  and not
+      ;; reproducible.  The log line is not parsed by default.
+      ;;
+      ;; Zabbix agent  tracks lastlogsize on  its own. But  not across
+      ;; restarts.  Even if the server replies with lastlogsize = 0 on
+      ;; every acitve  check refresh  the agent  is "smart"  enough to
+      ;; only send the  lines it did send before. Also  the there is a
+      ;; maxlines restriction in the agent  config. The agent may need
+      ;; many rounds to send the initial content of the log file. That
+      ;; basically means  the server cannot  "seek" and will  only get
+      ;; one chance to see the log line.
       ;;
       "agent data"
       {"response" "success",
