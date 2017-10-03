@@ -1,23 +1,24 @@
 (ns proto-zabbix.server
   (:require [proto-zabbix.proto :as proto]
             [clojure.pprint :refer [pprint]])
-  (:import [java.net ServerSocket]))
+  (:import [java.net ServerSocket]
+           [java.util.concurrent LinkedBlockingDeque]))
 
 
 ;; See https://gist.github.com/mjg123/1305115
 (defn new-q []
-  (java.util.concurrent.LinkedBlockingDeque.))
+  (LinkedBlockingDeque.))
 
 (defn offer!
   "Adds x to the back of queue q"
-  [q x]
+  [^LinkedBlockingDeque q x]
   (.offer q x)
   q)
 
 (defn take!
   "Takes from the front of queue q.  If q is empty, blocks until
   something is offer!ed into it"
-  [q]
+  [^LinkedBlockingDeque q]
   (.take q))
 
 ;;
