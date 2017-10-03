@@ -1,36 +1,25 @@
-# hello-world
+# Proto-Zabbix
 
-FIXME: description
+Explore Zabbix Protocols using Clojure
 
 ## Installation
 
-Download from http://example.com/FIXME.
+Download from https://github.com/alexei-matveev/proto-zabbix
 
 ## Usage
 
-FIXME: explanation
+To start a zabbix server at the default port issue
 
-    $ java -jar hello-world-0.1.0-standalone.jar [args]
+    $ lein run
 
-## Options
+For zabbix-get, zabbix-sender and zabbix-agentd see code.
 
-FIXME: listing of options this app accepts.
-
-## Examples
-
-...
-
-### Bugs
-
-...
-
-### Any Other Sections
-### That You Think
-### Might be Useful
+    $ lein uberjar
+    $ java -jar proto-zabbix-XYZ.jar [args]
 
 ## License
 
-Copyright © 2015 FIXME
+Copyright © 2015 Alexei Matveev <alexei.matveev@gmail.com>
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
