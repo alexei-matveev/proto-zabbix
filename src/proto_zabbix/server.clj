@@ -164,11 +164,11 @@
 
 (defn- start-server! []
   (let [q (q/make-queue)
-        handler-1 zabbix-handler ; (wrap zabbix-handler)
-        handler-2 (fn [x]
-                    (q/offer! q x)
-                    (handler-1 x))
-        sock (zabbix-server 10051 handler-2)
+        handler zabbix-handler ; (wrap zabbix-handler)
+        producer (fn [x]
+                   (q/offer! q x)
+                   (handler x))
+        sock (zabbix-server 10051 producer)
         ;; Not quite "opaque" object to pass to stop-server!
         server {:sock sock :q q}]
     ;; Consumer is supposed to drain the queue:
