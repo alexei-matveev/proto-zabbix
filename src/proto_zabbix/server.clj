@@ -169,17 +169,16 @@
         server {:sock sock :q q}]
     ;; Drain the queue here:
     (future
-      (loop []
-        (loop [x (take! q)]
-          (if-not (= x q)
-            (do
-              (println x)
-              (recur (take! q)))
-            (do
-              ;; In  case there  is more  than one  consumer, put  the
-              ;; sentinel value back:
-              (offer! q q)
-              (println "worker finished!"))))))
+      (loop [x (take! q)]
+        (if-not (= x q)
+          (do
+            (println x)
+            (recur (take! q)))
+          (do
+            ;; In  case there  is more  than one  consumer, put  the
+            ;; sentinel value back:
+            (offer! q q)
+            (println "worker finished!")))))
     server))
 
 (defn- stop-server! [server]
