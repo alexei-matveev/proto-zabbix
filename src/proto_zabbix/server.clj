@@ -162,7 +162,8 @@
 
 (defn- stop-server! [server]
   (println "close socket ...")
-  (.close (:sock server))
+  (let [^ServerSocket sock (:sock server)]
+    (.close sock))
   (println "tell workers to exit ...")
   ;; Tell consumers  to exit by  putting the sentinel object  into the
   ;; queue.
