@@ -123,8 +123,10 @@
       ;; one chance to see the log line.
       ;;
       "agent data"
-      {"response" "success",
-       "info" (info-message (get json "data"))}
+      (let [agent-data (get json "data")
+            server-response (info-message agent-data)]
+        {"response" "success",
+         "info" server-response})
       ;;
       ;; Next comes the  default case if nothing  else matches. FIXME:
       ;; an empty  string as  json response to  say, request  = "agent
@@ -141,11 +143,12 @@
       msg-out)))
 
 ;;
-;; For C-x C-e in CIDER. Make sure to stop Zabbix agent when done with
-;; experiments.  Otherwise the agent will cache data it did not manage
-;; to send to the server.
+;; Make  sure  to  stop  Zabbix  agent  when  done  with  experiments.
+;; Otherwise the agent will accumulate data it does not manage to send
+;; to the server.
 ;;
 (comment
+  ;; For C-x C-e in CIDER:
   (do
     (.close server)
     (def server (zabbix-server 10051 (wrap zhandler)))))
