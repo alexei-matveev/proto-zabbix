@@ -145,9 +145,17 @@
                :SERVER-RESPONSE msg-out})
       msg-out)))
 
+;; Prints log lines on tty:
+(defn- consume [msg]
+  #_(pprint msg)
+  (let [agent-data (get msg "data")]
+    (doseq [d agent-data]
+      (when (contains? d "lastlogsize")
+        (println (get d "value"))))))
+
 (defn- start-server! []
   (let [q (q/make-queue)
-        handler-1 (wrap zabbix-handler)
+        handler-1 zabbix-handler ; (wrap zabbix-handler)
         handler-2 (fn [x]
                     (q/offer! q x)
                     (handler-1 x))
@@ -159,7 +167,7 @@
       (loop []
         (if-let [x (q/take! q)]
           (do
-            (println {:worker x})
+            (consume x)
             (recur))
           (println "worker finished!"))))
     server))
