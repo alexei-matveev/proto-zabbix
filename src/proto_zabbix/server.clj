@@ -45,11 +45,10 @@
 ;; sending an empty string the agent will retry in 60 seconds.
 (defn- zabbix-server [port handler]
   (let [server-socket (ServerSocket. port)]
-    ;; FIXME: this may spawn a long chain of futures branching for
-    ;; every request:
+    ;; The  function  zserve  will  blocks  util  someone  closes  the
+    ;; server-socket. That is  why the future around the  call. Here a
+    ;; chain of futures branching for every request is started.
     (future
-      ;; Blocks util someone closes the server-socket. That is why the
-      ;; future around this call:
       (zserve server-socket handler))
     ;; Close this socket to terminate the chanin of futures:
     server-socket))
