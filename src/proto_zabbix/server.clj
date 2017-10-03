@@ -55,20 +55,65 @@
   [data]
   (let [n (count data)]
     (str "processed: " n "; failed: 0; total: " n "; seconds spent: 0.0")))
+
+;;
+;; Active checks and sender data are processed by the handler below.
+;;
+;; A request issued by zabbix sender [1] as for example initiated by
+;;
+;;     zabbix_sender -z host.example.com -k mysql.queries -o
+;;     342.45 -s "host"
+;;
+;; will read:
+;;
+;; {"request" "sender data",
+;;  "data" [{"host" "host",
+;;           "key" "mysql.queries",
+;;           "value" "342.45"}]
+;;
+;; FIXME: The  wiki text on  the protocol  [1] claims that  the Zabbix
+;; header   (ZBXD   with   length)   is   optional   in   the   recent
+;; versions.  Moreover the  length is  supposed to  be ignored  by the
+;; server when  the header is supplied.  This is not the  case here so
+;; far. Also  note that  the 2.4 version  of zabbix_sender  appears to
+;; inter-operate with our code.
+;;
+;; [1] https://www.zabbix.org/wiki/Docs/protocols/zabbix_sender/2.0
+;;
+;; The log data comes in a relatively inefficient format --- as a JSON
+;; map with host, key, value, lastlogsize, clock and ns field for each
+;; log  line.   There  is  no   mtime  field.   The  presense  of  the
+;; lastlogsize may help telling the log data from other kinds of data.
+;; The clock &  ns are not quite  usefull as they encode  the time the
+;; line was consumed  by zabbix agent --- thus different  for each log
+;; line and not reproducible.  The log line is not parsed by default.
+;;
+;; Zabbix  agent tracks  lastlogsize  on its  own,  albeit not  across
+;; restarts.  Even if the server replies with lastlogsize = 0 on every
+;; acitve check refresh, the agent is  "smart" enough to only send the
+;; lines it did send before. Note that there is a maxlines restriction
+;; in the  agent config. The  agent may need  many rounds to  send the
+;; initial content  of the  large log file.  That basically  means the
+;; server cannot "seek"  and may not rely on second  chance to see the
+;; log line.  On the  other hand  it may be  impractical to  track the
+;; position/version  of the  log  file  on the  server  side to  avoid
+;; reposts upon agent restarts.
 ;;
 ;; If  an agent  runs on  a non-standard  port other  than 10050,  the
 ;; request for  the active checks  will come with  a port number  as a
 ;; json field.   This port  is likly only  needed for  passive (server
 ;; initiated) checks:
 ;;
-;; {"request" "active checks",
-;;  "host" "host.example.com",
-;;  "host_metadata" "Linux host.example.com ...",
-;;  "port" 20050}
+;;     {"request" "active checks",
+;;      "host" "host.example.com",
+;;      "host_metadata" "Linux host.example.com ...",
+;;      "port" 20050}
 ;;
 (defn- zhandler [json]
   (let [request (get json "request")]
     (case request
+
+      ;; Agent asks what the server wants to know:
       "active checks"
       {"response" "success",
        "data" [#_(make-datum {"key" "agent.version", "delay" 30})
@@ -76,57 +121,14 @@
                ;; The log file should be readable for the zabbix user,
                ;; syslog is not:
                (make-datum {"key" "log[/var/log/zabbix-agent/zabbix_agentd.log]", "delay" 30})]}
-      ;;
-      ;; Active checks and sender data are processed here ...
-      ;;
-      ;; A  request  issued  by  zabbix  sender  [1]  as  for  example
-      ;; initiated by
-      ;;
-      ;;     zabbix_sender -z host.example.com -k mysql.queries -o
-      ;;     342.45 -s "host"
-      ;;
-      ;; will read:
-      ;;
-      ;; {"request" "sender data",
-      ;;  "data" [{"host" "host",
-      ;;           "key" "mysql.queries",
-      ;;           "value" "342.45"}]
-      ;;
-      ;; FIXME:  The wiki  text on  the protocol  [1] claims  that the
-      ;; Zabbix header  (ZBXD with length)  is optional in  the recent
-      ;; versions. Moreover  the length is  supposed to be  ignored by
-      ;; the server when the header is  supplied. This is not the case
-      ;; here so far. Also note  that the 2.4 version of zabbix_sender
-      ;; appears to inter-operate with our code.
-      ;;
-      ;; [1] https://www.zabbix.org/wiki/Docs/protocols/zabbix_sender/2.0
-      ;;
-      ;; The log data comes in  a relatively inefficient format --- as
-      ;; a JSON map  with host, key, value, lastlogsize,  clock and ns
-      ;; field  for each  log line.   There  is no  mtime field.   The
-      ;; presense of  the lastlogsize  may help  telling the  log data
-      ;; from  other kinds  of data.   The clock  & ns  are not  quite
-      ;; usefull  as they  encode the  time the  line was  consumed by
-      ;; zabbix agent  --- thus  different for each  log line  and not
-      ;; reproducible.  The log line is not parsed by default.
-      ;;
-      ;; Zabbix agent tracks lastlogsize on its own, albeit not across
-      ;; restarts.  Even if the server replies with lastlogsize = 0 on
-      ;; every acitve  check refresh, the  agent is "smart"  enough to
-      ;; only send the lines it did  send before. Note that there is a
-      ;; maxlines restriction in the agent  config. The agent may need
-      ;; many  rounds to  send the  initial content  of the  large log
-      ;; file. That basically  means the server cannot  "seek" and may
-      ;; not rely on  second chance to see the log  line. On the other
-      ;; hand it may  be impractical to track  the position/version of
-      ;; the log file  on the server side to avoid  reposts upon agent
-      ;; restarts.
-      ;;
+
+      ;; Agents tells the server what it wants to know:
       ("sender data" "agent data")
       (let [agent-data (get json "data")
             server-response (info-message agent-data)]
         {"response" "success",
          "info" server-response})
+
       ;;
       ;; Next comes the  default case if nothing  else matches. FIXME:
       ;; an empty  string as  json response to  say, request  = "agent
