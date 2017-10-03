@@ -153,6 +153,15 @@
       (when (contains? d "lastlogsize")
         (println (get d "value"))))))
 
+;; Consumes messages from the queue:
+(defn- consumer [q]
+  (loop []
+    (if-let [x (q/take! q)]
+      (do
+        (consume x)
+        (recur))
+      (println "worker finished!"))))
+
 (defn- start-server! []
   (let [q (q/make-queue)
         handler-1 zabbix-handler ; (wrap zabbix-handler)
@@ -160,16 +169,11 @@
                     (q/offer! q x)
                     (handler-1 x))
         sock (zabbix-server 10051 handler-2)
-        ;; "Opaque" to pass to stop-server!
+        ;; Not quite "opaque" object to pass to stop-server!
         server {:sock sock :q q}]
-    ;; Drain the queue here:
+    ;; Consumer is supposed to drain the queue:
     (future
-      (loop []
-        (if-let [x (q/take! q)]
-          (do
-            (consume x)
-            (recur))
-          (println "worker finished!"))))
+      (consumer q))
     server))
 
 (defn- stop-server! [server]
