@@ -3,6 +3,23 @@
             [clojure.pprint :refer [pprint]])
   (:import [java.net ServerSocket]))
 
+
+;; See https://gist.github.com/mjg123/1305115
+(defn new-q []
+  (java.util.concurrent.LinkedBlockingDeque.))
+
+(defn offer!
+  "Adds x to the back of queue q"
+  [q x]
+  (.offer q x)
+  q)
+
+(defn take!
+  "Takes from the front of queue q.  If q is empty, blocks until
+  something is offer!ed into it"
+  [q]
+  (.take q))
+
 ;;
 ;; The useful work is done in  separate threads started as futures. To
 ;; terminate  the chain  of futures  keep  a reference  and close  the
