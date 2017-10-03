@@ -137,39 +137,19 @@
 (defn- new-q []
   (LinkedBlockingDeque.))
 
-;; Adds x to the back of queue q
+;; Puts x to the back of queue  q. You cannot put nil there.  By local
+;; convention putting  the sentinel value  into the queue  will signal
+;; termination.  Consumers should put the sentinel value back as there
+;; might  be  more  than  one consumer!   By  another  convention  the
+;; sentinel value for the queue is the queue object itself.
 (defn- offer! [^LinkedBlockingDeque q x]
   (.offer q x)
   q)
 
-;; Takes from the front of queue q.  If q is empty, blocks until
-;; something is offered into it
+;; Takes from  the front of  queue.  If  queue is empty,  blocks until
+;; something is offered into it.
 (defn- take! [^LinkedBlockingDeque q]
   (.take q))
-
-;; Putting the queue  Object into the queue will signal  The End. Make
-;; sure not to take the EOQ sentinel  from the queue as there might be
-;; more than one consumer to get notified:
-(defn- eoq! [^LinkedBlockingDeque q]
-  (offer! q q))
-
-(defn- eoq? [^LinkedBlockingDeque q]
-  ;; Peek returns nil if the queue is empty:
-  (= q (.peek q)))
-
-(defn- wrap-deque [handler]
-  (let [q (new-q)]
-    ;; FIXME: forever:
-    (future
-      (loop [x (take! q)]
-        (println {:from-queue-processor x})
-        (recur (take! q))))
-    ;; Decorated handler posts the message to the queue and handles it
-    ;; on its own. Handlers run  in separate threads, any exception is
-    ;; not immediately visible:
-    (fn [msg]
-      (offer! q msg)
-      (handler msg))))
 
 ;; Decorator for the handler:
 (defn- wrap [handler]
@@ -179,14 +159,48 @@
                :SERVER-RESPONSE msg-out})
       msg-out)))
 
+(defn- start-server! []
+  (let [q (new-q)
+        q-source (fn [x]
+                   (offer! q x)
+                   (zhandler x))
+        sock (zabbix-server 10051 q-source)
+        ;; "Opaque" to pass to stop-server!
+        server {:sock sock :q q}]
+    ;; Drain the queue here:
+    (future
+      (loop []
+        (loop [x (take! q)]
+          (if-not (= x q)
+            (do
+              (println x)
+              (recur (take! q)))
+            (do
+              ;; In  case there  is more  than one  consumer, put  the
+              ;; sentinel value back:
+              (offer! q q)
+              (println "worker finished!"))))))
+    server))
+
+(defn- stop-server! [server]
+  (println "close socket ...")
+  (.close (:sock server))
+  (println "tell workers to exit ...")
+  ;; Tell consumers  to exit by  putting the sentinel object  into the
+  ;; queue. By convention the sentinel object is the queue itself:
+  (let [q (:q server)]
+    (offer! q q))
+  (println "done!"))
+
+;; Terminate with C-c:
+(defn -main [& args]
+  (start-server!))
+
 ;;
 ;; Make  sure  to  stop  Zabbix  agent  when  done  with  experiments.
 ;; Otherwise the agent will accumulate data it does not manage to send
 ;; to the server.  For your C-x C-e pleasure in CIDER:
 ;;
-#_(do (.close server)
-      (def server (zabbix-server 10051 (wrap zhandler))))
+#_(do (stop-server! server)
+      (def server (start-server!)))
 
-;; Terminate with C-c:
-(defn -main [& args]
-  (zabbix-server 10051 (wrap zhandler)))
