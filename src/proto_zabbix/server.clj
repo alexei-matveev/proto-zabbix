@@ -6,16 +6,16 @@
 
 
 ;; See https://gist.github.com/mjg123/1305115
-(defn new-q []
+(defn- new-q []
   (LinkedBlockingDeque.))
 
-(defn offer!
+(defn- offer!
   "Adds x to the back of queue q"
   [^LinkedBlockingDeque q x]
   (.offer q x)
   q)
 
-(defn take!
+(defn- take!
   "Takes from the front of queue q.  If q is empty, blocks until
   something is offer!ed into it"
   [^LinkedBlockingDeque q]
