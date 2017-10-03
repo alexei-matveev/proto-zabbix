@@ -1,3 +1,11 @@
+;; (defn emit-sexp
+;;   "Emits the Element to a Hiccup-Style Structure"
+;;   [e]
+;;   (cond (= (type e) clojure.lang.PersistentStructMap) ; clojure.data.xml.Element
+;;         (vec (concat [(:tag e)]
+;;                      (if (empty? (:attrs e)) [] [(:attrs e)])
+;;                      (map emit-sexp (:content e))))
+;;         :else e))
 [:zabbix_export
  [:version "2.0"]
  [:date "2016-09-21T18:29:45Z"]
