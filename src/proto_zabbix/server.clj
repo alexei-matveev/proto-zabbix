@@ -113,14 +113,17 @@
       ;; zabbix agent  --- thus  different for each  log line  and not
       ;; reproducible.  The log line is not parsed by default.
       ;;
-      ;; Zabbix agent  tracks lastlogsize on  its own. But  not across
+      ;; Zabbix agent tracks lastlogsize on its own, albeit not across
       ;; restarts.  Even if the server replies with lastlogsize = 0 on
-      ;; every acitve  check refresh  the agent  is "smart"  enough to
-      ;; only send the  lines it did send before. Also  the there is a
+      ;; every acitve  check refresh, the  agent is "smart"  enough to
+      ;; only send the lines it did  send before. Note that there is a
       ;; maxlines restriction in the agent  config. The agent may need
-      ;; many rounds to send the initial content of the log file. That
-      ;; basically means  the server cannot  "seek" and will  only get
-      ;; one chance to see the log line.
+      ;; many  rounds to  send the  initial content  of the  large log
+      ;; file. That basically  means the server cannot  "seek" and may
+      ;; not rely on  second chance to see the log  line. On the other
+      ;; hand it may  be impractical to track  the position/version of
+      ;; the log file  on the server side to avoid  reposts upon agent
+      ;; restarts.
       ;;
       "agent data"
       (let [agent-data (get json "data")
