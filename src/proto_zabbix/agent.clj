@@ -34,8 +34,8 @@
 (defn- request-active-checks!
   "Returns server response, or fails."
   [options]
-  (let [server (or (:server options) "localhost")
-        port (or (:port options) 10051)
+  (let [^String server (or (:server options) "localhost")
+        ^long port (or (:port options) 10051)
         host (or (:host options) "localhost")]
     (with-open [sock (Socket. server port)]
       (p/send-recv sock
@@ -49,8 +49,8 @@
 (defn- send-agent-data!
   "Sends agent data to the server, returns nil on failure"
   [options checks current-time]
-  (let [server (or (:server options) "localhost")
-        port (or (:port options) 10051)
+  (let [^String server (or (:server options) "localhost")
+        ^long port (or (:port options) 10051)
         host (or (:host options) "localhost")
         data (for [c checks]
                (let [[clock ns] (c/from-millis (:last-time c))]
