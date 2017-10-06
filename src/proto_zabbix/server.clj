@@ -29,12 +29,12 @@
 (defn- zabbix-server [port handler]
   (println "hello from server")
   (let [server-socket (ServerSocket. port)]
-    ;; The  function  zserve  will  blocks  util  someone  closes  the
+    ;; The  function  zserve  will  block  util  someone   closes  the
     ;; server-socket. That is  why the future around the  call. Here a
     ;; chain of futures branching for every request is started.
     (future
       (zserve server-socket handler))
-    ;; Close this socket to terminate the chanin of futures:
+    ;; Close this socket to terminate the chain of futures:
     server-socket))
 
 ;; FIXME:  lastlogsize and  mtime required  for log  items. Some  docs
@@ -52,7 +52,7 @@
 ;;     processed: 1; failed: 0; total: 1; seconds spent: 0.000099
 ;;
 (defn- info-message
-  "Prepares legacy Zabbox info message"
+  "Prepares legacy Zabbix info message"
   [data]
   (let [n (count data)]
     (str "processed: " n "; failed: 0; total: " n "; seconds spent: 0.0")))
