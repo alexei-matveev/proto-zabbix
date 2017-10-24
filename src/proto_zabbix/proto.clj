@@ -1,6 +1,5 @@
 (ns proto-zabbix.proto
-  (:require [proto-zabbix.clock :as c]
-            [clojure.java.io :as io]
+  (:require [clojure.java.io :as io]
             [cheshire.core :as json])
   (:import [java.nio ByteBuffer ByteOrder]
            [java.io InputStream OutputStream ByteArrayOutputStream]
@@ -145,9 +144,10 @@
   be JSON with host-, key-, and value fields"
   [^String host ^long port data]
   ;; FIXME: contrary to what the wiki docs suggest, zabbix_sender does
-  ;; not sent clock  if that was not supplied with  the each datum. So
+  ;; not send clock if that was not supplied with each datum. So
   ;; maybe we should not either?
-  (let [[clock _] (c/from-millis (System/currentTimeMillis))
+  (let [millis (System/currentTimeMillis)
+        clock (quot millis 1000)
         request {:request "sender data",
                  :data data,
                  :clock clock}]
