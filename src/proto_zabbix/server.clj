@@ -92,12 +92,12 @@
 ;; Zabbix  agent tracks  lastlogsize  on its  own,  albeit not  across
 ;; restarts.  Even if the server replies with lastlogsize = 0 on every
 ;; acitve check refresh, the agent is  "smart" enough to only send the
-;; lines it did send before. Note that there is a maxlines restriction
-;; in the  agent config. The  agent may need  many rounds to  send the
-;; initial content  of the  large log file.  That basically  means the
-;; server cannot "seek"  and may not rely on second  chance to see the
-;; log line.  On the  other hand  it may be  impractical to  track the
-;; position/version  of the  log  file  on the  server  side to  avoid
+;; lines  it did  not  send  before. Note  that  there  is a  maxlines
+;; restriction in the agent config. The  agent may need many rounds to
+;; send the  initial content  of the large  log file.   That basically
+;; means the server cannot "seek" and may not rely on second chance to
+;; see the log line.  On the other hand it may be impractical to track
+;; the position/version  of the log file  on the server side  to avoid
 ;; reposts upon agent restarts.
 ;;
 ;; If  an agent  runs on  a non-standard  port other  than 10050,  the
