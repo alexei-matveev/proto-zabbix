@@ -9,6 +9,8 @@
   :main proto-zabbix.server             ; why ^:skip-aot?
   :aot :all
   ;; :profiles {:uberjar {:aot :all}}
-  ;; Emit warnings on all reflection calls.
+  ;;
+  ;; Emit  warnings on  all reflection  calls.  The  native-image from
+  ;; GraalVM toolbox, for example, will refuse to compile reflection:
   :global-vars {*warn-on-reflection* true}
   :target-path "target/%s")
