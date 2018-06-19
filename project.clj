@@ -9,4 +9,6 @@
   :main proto-zabbix.server             ; why ^:skip-aot?
   :aot :all
   ;; :profiles {:uberjar {:aot :all}}
+  ;; Emit warnings on all reflection calls.
+  :global-vars {*warn-on-reflection* true}
   :target-path "target/%s")
