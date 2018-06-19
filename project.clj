@@ -6,6 +6,7 @@
   :dependencies [[org.clojure/clojure "1.9.0"]
                  [cheshire "5.6.1"]]
   ;; lein run will start an emulator of a Zabbix server:
-  :main ^:skip-aot proto-zabbix.server
+  :main proto-zabbix.server             ; why ^:skip-aot?
+  :aot :all
   ;; :profiles {:uberjar {:aot :all}}
   :target-path "target/%s")

@@ -2,7 +2,8 @@
   (:require [proto-zabbix.proto :as proto]
             [proto-zabbix.queue :as q]
             [clojure.pprint :refer [pprint]])
-  (:import [java.net ServerSocket]))
+  (:import [java.net ServerSocket])
+  (:gen-class))
 
 ;;
 ;; Useful  work is  done in  separate threads  started as  futures. To
