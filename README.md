@@ -7,6 +7,10 @@ information:
 
     [f0bec0d/proto-zabbix "0.1.0-SNAPSHOT"]
 
+Latest version at Clojars:
+
+![](https://clojars.org/f0bec0d/proto-zabbix/latest-version.svg)
+
 ## Installation
 
 Download from https://github.com/alexei-matveev/proto-zabbix
