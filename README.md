@@ -2,6 +2,11 @@
 
 Explore Zabbix Protocols using Clojure
 
+[Leiningen](https://github.com/technomancy/leiningen) dependency
+information:
+
+    [f0bec0d/proto-zabbix "0.1.0-SNAPSHOT"]
+
 ## Installation
 
 Download from https://github.com/alexei-matveev/proto-zabbix
