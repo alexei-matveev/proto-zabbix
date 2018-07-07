@@ -1,4 +1,4 @@
-(defproject proto-zabbix "0.1.0-SNAPSHOT"
+(defproject f0bec0d/proto-zabbix "0.1.0-SNAPSHOT"
   :description "Experiments with Zabbix protocol"
   :url "https://github.com/alexei-matveev/proto-zabbix"
   :license {:name "Eclipse Public License"
