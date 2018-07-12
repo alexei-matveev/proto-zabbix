@@ -1,4 +1,4 @@
-(defproject f0bec0d/proto-zabbix "0.1.0"
+(defproject f0bec0d/proto-zabbix "0.1.1-SNAPSHOT"
   :description "Zabbix Protocols in Clojure"
   :url "https://github.com/alexei-matveev/proto-zabbix"
   :license {:name "Eclipse Public License"
