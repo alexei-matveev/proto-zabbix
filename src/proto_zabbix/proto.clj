@@ -5,9 +5,15 @@
            [java.io InputStream OutputStream ByteArrayOutputStream]
            [java.net Socket]))
 
+;; If no  byte is available  because the stream is  at the end  of the
+;; file, the  value -1 is  returned; otherwise,  at least one  byte is
+;; read and  stored into buf. The  EOF happens e.g. when  the agent is
+;; not allowed to reply to the IP that invoked zabbix-get:
 (defn- read-byte-array ^bytes [^InputStream stream n]
   (let [buf (byte-array n)
         m (.read stream buf)]
+    (when (= -1 m)
+      (throw (ex-info "End of stream." {:n n})))
     (assert (= m n))
     buf))
 
