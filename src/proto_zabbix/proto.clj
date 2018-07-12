@@ -132,9 +132,12 @@
     ;; Response is "ZBXD\1" <8 byte length> <json body>
     (proto-read reader)))
 
-;; (zabbix-get "localhost" 10050 "agent.version")
-;; (zabbix-get "localhost" 10050 "vfs.fs.size[/,used]")
-;; (zabbix-get "localhost" 10050 "vfs.fs.discovery")
+;; For your C-x C-e pleasure:
+(comment
+  (zabbix-get "localhost" 10050 "agent.version")
+  (zabbix-get "localhost" 10050 "vfs.fs.size[/,used]")
+  (zabbix-get "localhost" 10050 "vfs.fs.discovery")
+  #_end)
 
 ;;
 ;; [1] https://www.zabbix.org/wiki/Docs/protocols/zabbix_sender/2.0
@@ -154,8 +157,11 @@
     (with-open [sock (Socket. host port)]
       (send-recv sock request))))
 
-;; (zabbix-sender "localhost"
-;;                10051
-;;                [{:host "some host",
-;;                  :key "my.key",
-;;                  :value 42}])
+;; For you C-x C-e pleasure:
+(comment
+  (zabbix-sender "localhost"
+                 10051
+                 [{:host "some host",
+                   :key "my.key",
+                   :value 42}])
+  #_end)
