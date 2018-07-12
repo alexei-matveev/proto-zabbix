@@ -3,11 +3,7 @@
 Explore Zabbix Protocols using Clojure
 
 [Leiningen](https://github.com/technomancy/leiningen) dependency
-information:
-
-    [f0bec0d/proto-zabbix "0.1.0-SNAPSHOT"]
-
-Latest version at Clojars:
+information for the latest version at Clojars:
 
 ![](https://clojars.org/f0bec0d/proto-zabbix/latest-version.svg)
 
