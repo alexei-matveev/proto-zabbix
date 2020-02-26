@@ -83,5 +83,10 @@
                 :user "user"
                 :password "password"}
         zbx (make-zbx config)]
+    ;;
+    ;; Host groups are returned as a list of of maps like this:
+    ;;
+    ;; {:groupid "1", :name "Templates", :internal "0", :flags "0"}
+    ;;
     (zbx "hostgroup.get" {:output :extend}))
   #_end)
