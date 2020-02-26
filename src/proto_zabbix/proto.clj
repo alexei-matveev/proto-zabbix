@@ -1,3 +1,8 @@
+;;
+;; See also:
+;;
+;; - https://github.com/hengyunabc/zabbix-sender/
+;;
 (ns proto-zabbix.proto
   (:require [clojure.java.io :as io]
             [cheshire.core :as json])
