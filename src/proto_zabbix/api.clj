@@ -76,3 +76,12 @@
     (fn zbx
       ([method] (zbx method {}))        ; e.g. (zbx "user.logout")
       ([method params] (call-api url method params auth-token)))))
+
+;;; For you C-x C-e pleasure:
+(comment
+  (let [config {:url "http://localhost/zabbix/api_jsonrpc.php"
+                :user "user"
+                :password "password"}
+        zbx (make-zbx config)]
+    (zbx "hostgroup.get" {:output :extend}))
+  #_end)
