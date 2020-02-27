@@ -10,6 +10,8 @@
   ;; lein run will start an emulator of a Zabbix server:
   :main proto-zabbix.server
   :profiles {:uberjar {:aot :all}}
+  :repositories [["snapshots" "file:///media-library/maven-repo/"]
+                 ["releases" "file:///media-library/maven-repo/"]]
   ;;
   ;; Emit  warnings on  all reflection  calls.  The  native-image from
   ;; GraalVM toolbox, for example, will refuse to compile reflection:
