@@ -100,5 +100,19 @@
       ;; {:groupid "1", :name "Templates", :internal "0", :flags "0"}
       ;;
       (zbx "hostgroup.get" {:output :extend})
-      (zbx "hostgroup.create" {:name "new host group"}))
+      ;;
+      ;; Greate  a random  group  and assign  a  user group  RW-access
+      ;; rights:
+      ;;
+      (let [user-group (first
+                        (zbx "usergroup.get"
+                             {:filter {:name "Zabbix administrators"}
+                              :selectRights :extend}))
+            new (zbx "hostgroup.create"
+                     {:name (str "new host group - " (rand-int 1000))})
+            new-rights (for [groupid (:groupids new)]
+                         {:permission "3" :id groupid})]
+        (zbx "usergroup.update"
+             {:usrgrpid (:usrgrpid user-group)
+              :rights (concat (:rights user-group) new-rights)})))
     (println "Hello from proto-zbbix.api!")))
