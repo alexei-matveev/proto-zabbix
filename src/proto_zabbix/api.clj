@@ -43,10 +43,17 @@
         response (-> @http-resp
                      :body
                      (json/parse-string true))]
+    ;;
     ;; Erros  return no  result.  Without  this  a plain  nil will  be
-    ;; returned.   Make it  clear the  error comes  from Zabbix.   The
-    ;; message in (:data error)  is sometimes more informative. Return
-    ;; the whole object:
+    ;; returned.  Make it clear the  error comes from Zabbix. The JSON
+    ;; RPC erorr object from Zabbix contans  a :code, a :message and a
+    ;; :data  field.  The  text  in (:data  error)  is sometimes  more
+    ;; informative. Return the whole object in ExceptionInfo.
+    ;;
+    ;; Unfortunately Leiningen may report an ExceptionInfo thrown here
+    ;; as  a "Syntax  error (ExceptionInfo)  compiling at  ...".  Make
+    ;; sure to look at the "Full report" in the *.edn file.
+    ;;
     (when-let [error (:error response)]
       (throw (ex-info "Zabbix API Error!"
                       error)))
