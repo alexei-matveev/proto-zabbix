@@ -86,14 +86,19 @@
 
 ;;; For you C-x C-e pleasure:
 (comment
-  (let [config {:url "http://localhost/zabbix/api_jsonrpc.php"
-                :user "user"
-                :password "password"}
-        zbx (make-zbx config)]
-    ;;
-    ;; Host groups are returned as a list of of maps like this:
-    ;;
-    ;; {:groupid "1", :name "Templates", :internal "0", :flags "0"}
-    ;;
-    (zbx "hostgroup.get" {:output :extend}))
-  #_end)
+  (defn -main []
+    ;; Chances are the  URL is http://localhost/zabbix/api_jsonrpc.php
+    ;; The  User &  Password  below  are defaults  in  a fresh  Zabbix
+    ;; install.
+    (let [config {:url "http://zabbix.localhost/api_jsonrpc.php"
+                  :user "Admin"
+                  :password "zabbix"}
+          zbx (make-zbx config)]
+      ;;
+      ;; Host groups are returned as a list of of maps like this:
+      ;;
+      ;; {:groupid "1", :name "Templates", :internal "0", :flags "0"}
+      ;;
+      (zbx "hostgroup.get" {:output :extend})
+      (zbx "hostgroup.create" {:name "new host group"}))
+    (println "Hello from proto-zbbix.api!")))
