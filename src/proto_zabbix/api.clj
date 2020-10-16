@@ -17,18 +17,24 @@
 ;; nil.   An   empty  or  arbitrary   string  will  not   suffice  for
 ;; "user.login" method.
 ;;
+;; Such use of  an Auth token is  an extesion of JSON  RPC, the "auth"
+;; field ist not even in the Spec [1].  Most API calls however require
+;; this auth token.
+;;
+;; [1] JSON RPC Spec, https://www.jsonrpc.org/specification
+;;
 (defn- call-api [url method params auth-token]
-  (let [json-in {:jsonrpc "2.0"
-                 :method method   ; e.g. "user.login"
-                 :params params   ; e.g. {:user "xxx" :password "yyy"}
-                 :id 1}
-        ;; Most API calls require auth token:
-        json-in (if (nil? auth-token)
-                  json-in
-                  (assoc json-in :auth auth-token))
-        text-in (json/generate-string json-in)
+  (let [json-rpc {:jsonrpc "2.0"
+                  :method method  ; e.g. "user.login"
+                  :params params  ; e.g. {:user "xxx" :password "yyy"}
+                  :id 1}
+        ;; Add auth token, if not nil:
+        json-obj (if (nil? auth-token)
+                   json-rpc
+                   (assoc json-rpc :auth auth-token))
+        ;; The actual JSON text goes into body:
         opts {:timeout (* 5 60 1000)    ; in ms
-              :body text-in
+              :body (json/generate-string json-obj)
               :headers {"Content-Type" "application/json"}
               ;; FIXME: keine Zertifikatprüfung:
               :insecure? true}
