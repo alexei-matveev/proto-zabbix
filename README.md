@@ -22,6 +22,14 @@ For zabbix-get, zabbix-sender and zabbix-agentd see code.
     $ lein uberjar
     $ java -jar proto-zabbix-XYZ.jar [args]
 
+## Deploy Artifacts
+
+    $ lein deploy clojars
+
+And supply username and a Deploy Token as a password. The Deploy Token
+should allow writing to the
+[Repo](https://clojars.org/f0bec0d/proto-zabbix).
+
 ## License
 
 Copyright © 2015 Alexei Matveev <alexei.matveev@gmail.com>
