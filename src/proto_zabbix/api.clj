@@ -17,47 +17,58 @@
 ;; nil.   An   empty  or  arbitrary   string  will  not   suffice  for
 ;; "user.login" method.
 ;;
-(defn- call-api
-  [url method params auth-token]
-  #_(println auth-token)
-  (let [timeout (* 5 60 1000) ; in ms
-        json-in {:jsonrpc "2.0"
-                 :method method ; e.g. "user.login"
-                 :params params ; e.g. {:user "xxx" :password "yyy"}
+(defn- call-api [url method params auth-token]
+  (let [json-in {:jsonrpc "2.0"
+                 :method method   ; e.g. "user.login"
+                 :params params   ; e.g. {:user "xxx" :password "yyy"}
                  :id 1}
-        ;; Most API calls requite auth token:
+        ;; Most API calls require auth token:
         json-in (if (nil? auth-token)
                   json-in
                   (assoc json-in :auth auth-token))
         text-in (json/generate-string json-in)
-        http-resp (http/post url
-                             {:timeout timeout
-                              :body text-in
-                              :headers {"Content-Type" "application/json"}
-                              ;; FIXME: keine Zertifikatprüfung:
-                              :insecure? true})
-        ;; Problems with SSL certificate manifest themselves here:
-        _ (when-let [error (:error @http-resp)]
-            (throw (ex-info "HTTP Client Error!" @http-resp)))
-        ;; True is specified to convert key strings to keywords:
-        response (-> @http-resp
-                     :body
-                     (json/parse-string true))]
+        opts {:timeout (* 5 60 1000)    ; in ms
+              :body text-in
+              :headers {"Content-Type" "application/json"}
+              ;; FIXME: keine Zertifikatprüfung:
+              :insecure? true}
+        http-resp @(http/post url opts)]
+
+    ;; NOTE: http-resp contains  the initial request as  well, so this
+    ;; is where  user names and  passwords may leak into  stack traces
+    ;; and log files. The user should consider catching exceptions and
+    ;; censor them.
     ;;
-    ;; Erros  return no  result.  Without  this  a plain  nil will  be
-    ;; returned.  Make it clear the  error comes from Zabbix. The JSON
-    ;; RPC erorr object from Zabbix contans  a :code, a :message and a
-    ;; :data  field.  The  text  in (:data  error)  is sometimes  more
+    ;; Problems with SSL certificate manifest themselves here:
+    (when-let [error (:error http-resp)]
+      (throw (ex-info "HTTP Client Error!" http-resp)))
+
+    (when (not= 200 (:status http-resp))
+      (throw (ex-info "Bad HTTP response!" http-resp)))
+
+    ;; JSON RPC Erros return no result.  Without this a plain nil will
+    ;; be returned.  Make it clear the error comes from Zabbix. The
+    ;; JSON RPC erorr object from Zabbix contans a :code, a :message
+    ;; and a :data field.  The text in (:data error) is sometimes more
     ;; informative. Return the whole object in ExceptionInfo.
     ;;
     ;; Unfortunately Leiningen may report an ExceptionInfo thrown here
     ;; as  a "Syntax  error (ExceptionInfo)  compiling at  ...".  Make
     ;; sure to look at the "Full report" in the *.edn file.
     ;;
-    (when-let [error (:error response)]
-      (throw (ex-info "Zabbix API Error!"
-                      error)))
-    (:result response)))
+    ;; Body may  be not a valid  JSON. Also we convert  string keys to
+    ;; keywords, that is what the "true" is for.
+    (let [response (try
+                     (json/parse-string (:body http-resp) true)
+                     (catch Exception e
+                       (throw
+                        (ex-info "Bad JSON response!" http-resp e))))]
+      ;; A  valid JSON  RPC response  may also  indicate an  error ---
+      ;; think creating a host group that already exists:
+      (if-let [error (:error response)]
+        (throw (ex-info "Zabbix API Error!" response))
+        ;; Success, return the actual result only:
+        (:result response)))))
 
 
 ;; Auth token  is a  hash string,  as of  2017 it  is stored  in table
@@ -86,33 +97,15 @@
 
 ;;; For you C-x C-e pleasure:
 (comment
-  (defn -main []
-    ;; Chances are the  URL is http://localhost/zabbix/api_jsonrpc.php
-    ;; The  User &  Password  below  are defaults  in  a fresh  Zabbix
-    ;; install.
-    (let [config {:url "http://zabbix.localhost/api_jsonrpc.php"
-                  :user "Admin"
-                  :password "zabbix"}
-          zbx (make-zbx config)]
-      ;;
-      ;; Host groups are returned as a list of of maps like this:
-      ;;
-      ;; {:groupid "1", :name "Templates", :internal "0", :flags "0"}
-      ;;
-      (zbx "hostgroup.get" {:output :extend})
-      ;;
-      ;; Greate  a random  group  and assign  a  user group  RW-access
-      ;; rights:
-      ;;
-      (let [user-group (first
-                        (zbx "usergroup.get"
-                             {:filter {:name "Zabbix administrators"}
-                              :selectRights :extend}))
-            new (zbx "hostgroup.create"
-                     {:name (str "new host group - " (rand-int 1000))})
-            new-rights (for [groupid (:groupids new)]
-                         {:permission "3" :id groupid})]
-        (zbx "usergroup.update"
-             {:usrgrpid (:usrgrpid user-group)
-              :rights (concat (:rights user-group) new-rights)})))
-    (println "Hello from proto-zbbix.api!")))
+  ;; See  e.g.   https://github.com/alexei-matveev/hello-zabbix for  a
+  ;; test installation in k3s ...
+  (let [config {:url "https://zabbix.localhost/api_jsonrpc.php"
+                :user "Admin"
+                :password "zabbix"}
+        ;; Login happens here:
+        zbx (make-zbx config)
+        ;; Force result, see logout below:
+        result (doall (zbx "hostgroup.get"))]
+    ;; Dont forget to logout:
+    (zbx "user.logout")
+    result))
