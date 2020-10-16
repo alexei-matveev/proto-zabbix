@@ -1,4 +1,4 @@
-(defproject f0bec0d/proto-zabbix "0.2.0"
+(defproject f0bec0d/proto-zabbix "0.3.0-SNAPSHOT"
   :description "Zabbix Protocols in Clojure"
   :url "https://github.com/alexei-matveev/proto-zabbix"
   :license {:name "Eclipse Public License"
@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [cheshire "5.10.0"]
                  ;; Für Zabbix API Abfragen:
-                 [http-kit "2.3.0"]]
+                 [http-kit "2.5.0"]]
   ;; lein run will start an emulator of a Zabbix server:
   :main proto-zabbix.server
   :profiles {:uberjar {:aot :all}}
