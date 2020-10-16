@@ -52,18 +52,21 @@
     (when (not= 200 (:status http-resp))
       (throw (ex-info "Bad HTTP response!" http-resp)))
 
-    ;; JSON RPC Erros return no result.  Without this a plain nil will
-    ;; be returned.  Make it clear the error comes from Zabbix. The
-    ;; JSON RPC erorr object from Zabbix contans a :code, a :message
-    ;; and a :data field.  The text in (:data error) is sometimes more
-    ;; informative. Return the whole object in ExceptionInfo.
+    ;; JSON RPC Erros return no result.  If we do not check for errors
+    ;; a  plain   nil  will  be  returned   when  evaluating  (:result
+    ;; response).  Also we  should make it clear when  the error comes
+    ;; from Zabbix as opposed to HTTP.  The JSON RPC erorr object from
+    ;; Zabbix contans a :code, a :message and a :data field.  The text
+    ;; in  (:data error)  is sometimes  more informative.   Return the
+    ;; whole object in ExceptionInfo.
     ;;
     ;; Unfortunately Leiningen may report an ExceptionInfo thrown here
     ;; as  a "Syntax  error (ExceptionInfo)  compiling at  ...".  Make
     ;; sure to look at the "Full report" in the *.edn file.
     ;;
-    ;; Body may  be not a valid  JSON. Also we convert  string keys to
-    ;; keywords, that is what the "true" is for.
+    ;; Body  may  be  not  a  valid  JSON  ---  think  of  custom  404
+    ;; pages. Also  we convert string  keys to keywords, that  is what
+    ;; the "true" is for.
     (let [response (try
                      (json/parse-string (:body http-resp) true)
                      (catch Exception e
