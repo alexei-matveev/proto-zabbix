@@ -52,13 +52,15 @@
     (when (not= 200 (:status http-resp))
       (throw (ex-info "Bad HTTP response!" http-resp)))
 
-    ;; JSON RPC Erros return no result.  If we do not check for errors
-    ;; a  plain   nil  will  be  returned   when  evaluating  (:result
-    ;; response).  Also we  should make it clear when  the error comes
-    ;; from Zabbix as opposed to HTTP.  The JSON RPC erorr object from
-    ;; Zabbix contans a :code, a :message and a :data field.  The text
-    ;; in  (:data error)  is sometimes  more informative.   Return the
-    ;; whole object in ExceptionInfo.
+    ;; JSON RPC Errors return no result.  If we did not check for such
+    ;; errors a plain  nil would be returned  when evaluating (:result
+    ;; response).  Instead we choose to throw an exception.
+    ;;
+    ;; Also we should  make it clear when the error  comes from Zabbix
+    ;; as  opposed to  HTTP or  transport Layer.   The JSON  RPC erorr
+    ;; object  from Zabbix  contans a  :code, a  :message and  a :data
+    ;; field.    The  text   in  (:data   error)  is   sometimes  more
+    ;; informative.  Return the whole object in ExceptionInfo.
     ;;
     ;; Unfortunately Leiningen may report an ExceptionInfo thrown here
     ;; as  a "Syntax  error (ExceptionInfo)  compiling at  ...".  Make
